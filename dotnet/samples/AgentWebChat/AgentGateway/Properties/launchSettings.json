@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "AgentGateway": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:64082;http://localhost:64083"
+    }
+  }
+}

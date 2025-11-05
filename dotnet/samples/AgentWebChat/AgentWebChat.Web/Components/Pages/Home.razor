@@ -3,7 +3,7 @@
 @inject AgentDiscoveryClient AgentClient
 @inject IJSRuntime JSRuntime
 @inject ILogger<Home> Logger
-@inject A2AAgentClient A2AActorClient
+@inject A2AAgentClient A2AAgentClient
 @inject OpenAIResponsesAgentClient OpenAIResponsesAgentClient
 @inject OpenAIChatCompletionsAgentClient OpenAIChatCompletionsAgentClient
 @rendermode InteractiveServer
@@ -892,7 +892,7 @@
 	private bool isLoadingAgents = true;
 	private string currentStreamedMessage = "";
 	private string selectedAgentName = "";
-	private List<AgentDiscoveryClient.AgentDiscoveryCard> availableAgents = new();
+	private List<AgentContracts.AgentDiscoveryCard> availableAgents = new();
 	private List<Conversation> conversations = new();
 	private Conversation? currentConversation;
 
@@ -978,7 +978,7 @@
 		try
 		{
 			Logger.LogInformation("Discovering agent card for agent: {AgentName}", selectedAgentName);
-			var agentCard = await A2AActorClient.GetAgentCardAsync(selectedAgentName);
+			var agentCard = await A2AAgentClient.GetAgentCardAsync(selectedAgentName);
 			if (agentCard is not null)
 			{
 				discoveredAgentCardJson = JsonSerializer.Serialize(agentCard, new JsonSerializerOptions() { WriteIndented = true });
@@ -1091,7 +1091,7 @@
 			{
 				Protocol.OpenAIResponses => OpenAIResponsesAgentClient,
 				Protocol.OpenAIChatCompletions => OpenAIChatCompletionsAgentClient,
-				Protocol.A2A or _ => A2AActorClient
+				Protocol.A2A or _ => A2AAgentClient
 			};
 
             var messages = new List<ChatMessage> { new(ChatRole.User, userMessage) };

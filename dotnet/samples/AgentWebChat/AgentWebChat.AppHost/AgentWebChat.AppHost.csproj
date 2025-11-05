@@ -14,9 +14,13 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.Azure.CognitiveServices" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" />
+    <PackageReference Include="Aspire.Hosting.Orleans" />
+    <PackageReference Include="Aspire.Hosting.Redis" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AgentGateway\AgentGateway.csproj" />
     <ProjectReference Include="..\AgentWebChat.AgentHost\AgentWebChat.AgentHost.csproj" />
     <ProjectReference Include="..\AgentWebChat.Web\AgentWebChat.Web.csproj" />
   </ItemGroup>

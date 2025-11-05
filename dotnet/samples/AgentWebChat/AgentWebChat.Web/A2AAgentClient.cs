@@ -13,16 +13,16 @@ namespace AgentWebChat.Web;
 internal sealed class A2AAgentClient : AgentClientBase
 {
     private readonly ILogger _logger;
-    private readonly Uri _uri;
+    private readonly HttpClient _httpClient;
 
     // because A2A sdk does not provide a client which can handle multiple agents, we need a client per agent
     // for this app the convention is "baseUri/<agentname>"
     private readonly ConcurrentDictionary<string, (A2AClient, A2ACardResolver)> _clients = [];
 
-    public A2AAgentClient(ILogger logger, Uri baseUri)
+    public A2AAgentClient(ILogger<A2AAgentClient> logger, HttpClient httpClient)
     {
         this._logger = logger;
-        this._uri = baseUri;
+        this._httpClient = httpClient;
     }
 
     public async override IAsyncEnumerable<AgentRunResponseUpdate> RunStreamingAsync(
@@ -141,8 +141,8 @@ internal sealed class A2AAgentClient : AgentClientBase
     private (A2AClient, A2ACardResolver) ResolveClient(string agentName) =>
         this._clients.GetOrAdd(agentName, name =>
         {
-            var uri = new Uri($"{this._uri}/{name}/");
-            var a2aClient = new A2AClient(uri);
+            var uri = new Uri($"{name}/");
+            var a2aClient = new A2AClient(uri, this._httpClient);
 
             // /v1/card is a default path for A2A agent card discovery
             var a2aCardResolver = new A2ACardResolver(uri, agentCardPath: "/v1/card/");

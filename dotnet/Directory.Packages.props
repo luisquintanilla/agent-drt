@@ -12,9 +12,15 @@
   <ItemGroup>
     <!-- Aspire.* -->
     <PackageVersion Include="Aspire.Azure.AI.OpenAI" Version="13.0.0-preview.1.25560.3" />
+    <PackageVersion Include="Aspire.Azure.Data.Tables" Version="$(AspireAppHostSdkVersion)" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="$(AspireAppHostSdkVersion)" />
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="$(AspireAppHostSdkVersion)" />
     <PackageVersion Include="Aspire.Hosting.Azure.CognitiveServices" Version="$(AspireAppHostSdkVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="$(AspireAppHostSdkVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Orleans" Version="$(AspireAppHostSdkVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireAppHostSdkVersion)" />
     <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="$(AspireAppHostSdkVersion)" />
+    <PackageVersion Include="Aspire.StackExchange.Redis" Version="$(AspireAppHostSdkVersion)" />
     <PackageVersion Include="CommunityToolkit.Aspire.OllamaSharp" Version="13.0.0-beta.440" />
     <!-- Azure.* -->
     <PackageVersion Include="Azure.AI.Projects" Version="1.2.0-beta.3" />
@@ -26,6 +32,9 @@
     <!-- System.* -->
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Orleans.Clustering.AzureStorage" Version="9.2.1" />
+    <PackageVersion Include="Microsoft.Orleans.Persistence.AzureStorage" Version="9.2.1" />
+    <PackageVersion Include="Microsoft.Orleans.Reminders.AzureStorage" Version="9.2.1" />
     <PackageVersion Include="System.ClientModel" Version="1.8.0" />
     <PackageVersion Include="System.CodeDom" Version="10.0.0" />
     <PackageVersion Include="System.Collections.Immutable" Version="10.0.0" />
@@ -37,6 +46,8 @@
     <PackageVersion Include="System.Text.Json" Version="10.0.0" />
     <PackageVersion Include="System.Threading.Channels" Version="10.0.0" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
+    <!-- Redis -->
+    <PackageVersion Include="StackExchange.Redis" Version="2.9.32" />
     <!-- OpenTelemetry -->
     <PackageVersion Include="OpenTelemetry" Version="1.13.1" />
     <PackageVersion Include="OpenTelemetry.Api" Version="1.13.1" />
@@ -68,7 +79,9 @@
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Yarp" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="9.7.0" />
     <!-- Vector Stores -->
     <PackageVersion Include="Microsoft.SemanticKernel.Connectors.InMemory" Version="1.67.0-preview" />
@@ -168,5 +181,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <!-- YARP -->
+    <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
+    <!-- Orleans -->
+    <PackageVersion Include="Microsoft.Orleans.Reminders" Version="9.2.1" />
+    <PackageVersion Include="Microsoft.Orleans.Runtime" Version="9.2.1" />
+    <PackageVersion Include="Microsoft.Orleans.Server" Version="9.2.1" />
+    <PackageVersion Include="Microsoft.Orleans.Serialization.SystemTextJson" Version="9.2.1" />
+    <PackageVersion Include="Microsoft.Orleans.TestingHost" Version="9.2.1" />
   </ItemGroup>
 </Project>

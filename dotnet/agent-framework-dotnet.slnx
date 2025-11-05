@@ -13,6 +13,9 @@
     <Project Path="samples/A2AClientServer/A2AServer/A2AServer.csproj" />
   </Folder>
   <Folder Name="/Samples/AgentWebChat/">
+    <Project Path="samples/AgentWebChat/AgentContracts/AgentContracts.csproj" Id="3ebe43e6-031b-4c3e-996e-29aac9f8c614" />
+    <Project Path="samples/AgentWebChat/AgentGateway/AgentGateway.csproj" />
+    <Project Path="samples/AgentWebChat/AgentGateway.UnitTests/AgentGateway.UnitTests.csproj" />
     <Project Path="samples/AgentWebChat/AgentWebChat.AgentHost/AgentWebChat.AgentHost.csproj" />
     <Project Path="samples/AgentWebChat/AgentWebChat.AppHost/AgentWebChat.AppHost.csproj" />
     <Project Path="samples/AgentWebChat/AgentWebChat.ServiceDefaults/AgentWebChat.ServiceDefaults.csproj" />

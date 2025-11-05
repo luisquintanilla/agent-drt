@@ -224,3 +224,5 @@ local.settings.json
 
 # Database files
 *.db
+.azurite/
+.redis/

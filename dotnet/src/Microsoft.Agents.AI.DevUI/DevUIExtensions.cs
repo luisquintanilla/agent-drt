@@ -31,7 +31,7 @@ public static class DevUIExtensions
         this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("");
-        group.MapDevUI(pattern: "/devui");
+        group.MapDevUIAssets(pattern: "/devui");
         group.MapMeta();
         group.MapEntities();
         return group;
@@ -48,7 +48,7 @@ public static class DevUIExtensions
     /// <returns>A <see cref="IEndpointConventionBuilder"/> that can be used to add authorization or other endpoint configuration.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="endpoints"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when <paramref name="pattern"/> is null or whitespace.</exception>
-    internal static IEndpointConventionBuilder MapDevUI(
+    public static IEndpointConventionBuilder MapDevUIAssets(
         this IEndpointRouteBuilder endpoints,
         [StringSyntax("Route")] string pattern = "/devui")
     {

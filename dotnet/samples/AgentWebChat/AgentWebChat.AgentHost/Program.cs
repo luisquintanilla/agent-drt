@@ -1,26 +1,56 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
-using A2A.AspNetCore;
+using AgentContracts;
 using AgentWebChat.AgentHost;
 using AgentWebChat.AgentHost.Custom;
+using AgentWebChat.AgentHost.DurableAgents.Utilities;
+using AgentWebChat.AgentHost.Options;
 using AgentWebChat.AgentHost.Utilities;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.DevUI;
 using Microsoft.Agents.AI.Hosting;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOptions<WorkerOptions>()
+    .Bind(builder.Configuration.GetSection(WorkerOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+// Add a singleton capturing this worker process metadata (instance id + host id)
+builder.Services.AddSingleton(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<WorkerOptions>>().Value;
+    string hostId = options.HostId ?? Environment.MachineName;
+    return new WorkerProcessMetadata { InstanceId = Guid.NewGuid(), HostId = hostId };
+});
+
+bool enableWorkerRegistration = builder.Configuration.GetValue<bool>("AgentRuntime:RegisterWorker");
+if (enableWorkerRegistration)
+{
+    // Register worker registration background service
+    builder.Services.AddHostedService<WorkerRegistrationService>();
+}
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
 builder.Services.AddOpenApi();
+builder.AddDevUI();
+
+// Configure chat message store using Conversations API via AgentGateway
+// The gateway base address is provided by Aspire's service discovery
+var conversationsBaseAddress = /*"http://localhost:5390"*/builder.Configuration["Worker:GatewayBaseAddress"];
+if (!string.IsNullOrWhiteSpace(conversationsBaseAddress))
+{
+    builder.Services.AddHttpClient<ConversationsApiClient>(client => client.BaseAddress = new Uri(conversationsBaseAddress));
+    builder.Services.AddConversationsChatMessageStore();
+}
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
-
-// Configure the chat model and our agent.
-builder.AddKeyedChatClient("chat-model");
 
 // Add DevUI services
 builder.AddDevUI();
@@ -38,39 +68,22 @@ var pirateAgentBuilder = builder.AddAIAgent(
     .WithAITool(new CustomFunctionTool())
     .WithInMemoryThreadStore();
 
-var knightsKnavesAgentBuilder = builder.AddAIAgent("knights-and-knaves", (sp, key) =>
+builder.AddKeyedChatClient("chat-model").UseDurableFunctionInvocation();
+builder.AddAIAgent("config-rollout", (sp, key) =>
 {
     var chatClient = sp.GetRequiredKeyedService<IChatClient>("chat-model");
-
-    ChatClientAgent knight = new(
+    return new ConfigRolloutAgent(
         chatClient,
-        """
-        You are a knight. This means that you must always tell the truth. Your name is Alice.
-        Bob is standing next to you. Bob is a knave, which means he always lies.
-        When replying, always start with your name (Alice). Eg, "Alice: I am a knight."
-        """, "Alice");
+        sp.GetRequiredService<ILogger<ConfigRolloutAgent>>());
+});
 
-    ChatClientAgent knave = new(
+builder.AddAIAgent("pirate", (sp, key) =>
+{
+    var chatClient = sp.GetRequiredKeyedService<IChatClient>("chat-model");
+    return new DurableChatClientAgent(
         chatClient,
-        """
-        You are a knave. This means that you must always lie. Your name is Bob.
-        Alice is standing next to you. Alice is a knight, which means she always tells the truth.
-        When replying, always include your name (Bob). Eg, "Bob: I am a knight."
-        """, "Bob");
-
-    ChatClientAgent narrator = new(
-        chatClient,
-        """
-        You are are the narrator of a puzzle involving knights (who always tell the truth) and knaves (who always lie).
-        The user is going to ask questions and guess whether Alice or Bob is the knight or knave.
-        Alice is standing to one side of you. Alice is a knight, which means she always tells the truth.
-        Bob is standing to the other side of you. Bob is a knave, which means he always lies.
-        When replying, always include your name (Narrator).
-        Once the user has deduced what type (knight or knave) both Alice and Bob are, tell them whether they are right or wrong.
-        If the user asks a general question about their surrounding, make something up which is consistent with the scenario.
-        """, "Narrator");
-
-    return AgentWorkflowBuilder.BuildConcurrent([knight, knave, narrator]).AsAgent(name: key);
+        instructions: "Speak like a pirate in all responses.",
+        name: "pirate");
 });
 
 // Workflow consisting of multiple specialized agents
@@ -156,15 +169,6 @@ app.UseExceptionHandler();
 
 // attach a2a with simple message communication
 app.MapA2A(pirateAgentBuilder, path: "/a2a/pirate");
-app.MapA2A(knightsKnavesAgentBuilder, path: "/a2a/knights-and-knaves", agentCard: new()
-{
-    Name = "Knights and Knaves",
-    Description = "An agent that helps you solve the knights and knaves puzzle.",
-    Version = "1.0",
-
-    // Url can be not set, and SDK will help assign it.
-    // Url = "http://localhost:5390/a2a/knights-and-knaves"
-});
 
 app.MapDevUI();
 
@@ -172,10 +176,12 @@ app.MapOpenAIResponses();
 app.MapOpenAIConversations();
 
 app.MapOpenAIChatCompletions(pirateAgentBuilder);
-app.MapOpenAIChatCompletions(knightsKnavesAgentBuilder);
 
 // Map the agents HTTP endpoints
 app.MapAgentDiscovery("/agents");
+
+// Worker meta endpoint used by gateway to uniquely identify this process
+app.MapGet("/worker/meta", (WorkerProcessMetadata meta) => Results.Ok(meta));
 
 app.MapDefaultEndpoints();
 app.Run();
