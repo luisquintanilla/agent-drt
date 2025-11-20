@@ -8,6 +8,7 @@ using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -47,13 +48,9 @@ public static class MicrosoftAgentAIHostingOpenAIServiceCollectionExtensions
         services.TryAddSingleton<IConversationStorage, InMemoryConversationStorage>();
         services.TryAddSingleton<IAgentConversationIndex, InMemoryAgentConversationIndex>();
         services.TryAddSingleton<InMemoryStorageOptions>();
-        services.TryAddSingleton<IResponsesService>(sp =>
-        {
-            var executor = sp.GetRequiredService<IResponseExecutor>();
-            var options = sp.GetRequiredService<InMemoryStorageOptions>();
-            var conversationStorage = sp.GetService<IConversationStorage>();
-            return new InMemoryResponsesService(executor, options, conversationStorage);
-        });
+        services.TryAddSingleton<IResponseStorage, InMemoryResponseStorage>();
+        services.AddOptions<ResponsesServiceOptions>();
+        services.TryAddSingleton<IResponsesService, InMemoryResponsesService>();
         services.TryAddSingleton<IResponseExecutor, HostedAgentResponseExecutor>();
 
         return services;

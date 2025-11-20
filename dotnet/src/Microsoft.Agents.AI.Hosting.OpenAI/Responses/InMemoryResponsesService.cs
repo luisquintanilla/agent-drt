@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,33 +10,40 @@ using System.Threading.Tasks;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 
 /// <summary>
 /// In-memory implementation of responses service for testing and development.
 /// This implementation is thread-safe but data is not persisted across application restarts.
+/// Uses IResponseStorage for storing response state and metadata.
 /// </summary>
 internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
 {
     private readonly IResponseExecutor _executor;
-    private readonly MemoryCache _cache;
-    private readonly InMemoryStorageOptions _options;
-    private readonly Conversations.IConversationStorage? _conversationStorage;
+    private readonly IResponseStorage _storage;
+    private readonly ConcurrentDictionary<string, ResponseState> _runningResponses = new();
+    private readonly TimeSpan _completedResponseRetentionPeriod;
+    private readonly ILogger<InMemoryResponsesService> _logger;
+    private readonly Timer _cleanupTimer;
+    private bool _disposed;
 
-    private sealed class ResponseState
+    private sealed class ResponseState(CreateResponse request)
     {
         private readonly object _lock = new();
         private TaskCompletionSource _updateSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly Dictionary<int, ItemResource> _outputItems = [];
 
-        public Response? Response { get; set; }
-        public CreateResponse? Request { get; set; }
+        public CreateResponse Request { get; } = request;
         public List<StreamingResponseEvent> StreamingUpdates { get; } = [];
         public Task? CompletionTask { get; set; }
-        public CancellationTokenSource? CancellationTokenSource { get; set; }
-        public bool IsTerminal => this.Response?.IsTerminal ?? false;
+        public string? CurrentETag { get; set; }
+        public bool IsTerminal { get; set; }
+        public DateTimeOffset? CompletedAt { get; set; }
+        public CancellationTokenSource CancellationTokenSource { get; } = new();
 
         public void AddStreamingEvent(StreamingResponseEvent streamingEvent)
         {
@@ -43,35 +51,31 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
             {
                 this.StreamingUpdates.Add(streamingEvent);
 
-                // Update the response object for events that contain it
-                if (streamingEvent is IStreamingResponseEventWithResponse responseEvent)
-                {
-                    this.Response = responseEvent.Response;
-                }
-
                 // Track output items as they're added or updated
                 if (streamingEvent is StreamingOutputItemAdded itemAdded)
                 {
                     this._outputItems[itemAdded.OutputIndex] = itemAdded.Item;
-                    this.UpdateResponseOutput();
                 }
                 else if (streamingEvent is StreamingOutputItemDone itemDone)
                 {
                     this._outputItems[itemDone.OutputIndex] = itemDone.Item;
-                    this.UpdateResponseOutput();
+                }
+
+                // Check if we've reached a terminal state
+                if (streamingEvent is IStreamingResponseEventWithResponse responseEvent)
+                {
+                    this.IsTerminal = responseEvent.Response.IsTerminal;
                 }
             }
 
             this.SignalUpdate();
         }
 
-        private void UpdateResponseOutput()
+        public List<ItemResource> GetOutputItems()
         {
-            // Update the Response.Output list with current items
-            if (this.Response is not null)
+            lock (this._lock)
             {
-                List<ItemResource> outputList = [.. this._outputItems.OrderBy(kvp => kvp.Key).Select(kvp => kvp.Value)];
-                this.Response = this.Response with { Output = outputList };
+                return [.. this._outputItems.OrderBy(kvp => kvp.Key).Select(kvp => kvp.Value)];
             }
         }
 
@@ -127,24 +131,26 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         }
     }
 
-    public InMemoryResponsesService(IResponseExecutor executor)
-        : this(executor, new InMemoryStorageOptions(), null)
-    {
-    }
-
-    public InMemoryResponsesService(IResponseExecutor executor, InMemoryStorageOptions options)
-        : this(executor, options, null)
-    {
-    }
-
-    public InMemoryResponsesService(IResponseExecutor executor, InMemoryStorageOptions options, Conversations.IConversationStorage? conversationStorage)
+    public InMemoryResponsesService(
+        IResponseExecutor executor,
+        IResponseStorage storage,
+        IOptions<ResponsesServiceOptions> options,
+        ILogger<InMemoryResponsesService>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(executor);
+        ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(options);
         this._executor = executor;
-        this._options = options;
-        this._cache = new MemoryCache(options.ToMemoryCacheOptions());
-        this._conversationStorage = conversationStorage;
+        this._storage = storage;
+        this._completedResponseRetentionPeriod = options.Value.CompletedResponseRetentionPeriod;
+        this._logger = logger ?? NullLogger<InMemoryResponsesService>.Instance;
+
+        // Start cleanup timer to run every minute
+        this._cleanupTimer = new Timer(
+            callback: this.CleanupCompletedResponses,
+            state: null,
+            dueTime: TimeSpan.FromMinutes(1),
+            period: TimeSpan.FromMinutes(1));
     }
 
     public async ValueTask<ResponseError?> ValidateRequestAsync(
@@ -173,10 +179,10 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
             throw new InvalidOperationException("Cannot create a streaming response using CreateResponseAsync. Use CreateResponseStreamingAsync instead.");
         }
 
-        var idGenerator = new IdGenerator(responseId: null, conversationId: request.Conversation?.Id);
-        var responseId = idGenerator.ResponseId;
-        var state = this.InitializeResponse(responseId, request);
-        var ct = request.Background switch
+        IdGenerator idGenerator = new(responseId: null, conversationId: request.Conversation?.Id);
+        string responseId = idGenerator.ResponseId;
+        ResponseState state = await this.InitializeResponseAsync(responseId, request, cancellationToken).ConfigureAwait(false);
+        CancellationToken ct = request.Background switch
         {
             true => CancellationToken.None,
             _ => cancellationToken,
@@ -186,12 +192,14 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         // For background responses, start execution and return immediately
         if (request.Background == true)
         {
-            return state.Response!;
+            StorageResult<Response>? result = await this._storage.GetResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
+            return result?.Value ?? throw new InvalidOperationException($"Failed to retrieve response '{responseId}' after creation.");
         }
 
         // For non-background responses, wait for completion
         await state.CompletionTask!.WaitAsync(cancellationToken).ConfigureAwait(false);
-        return state.Response!;
+        StorageResult<Response>? completedResult = await this._storage.GetResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
+        return completedResult?.Value ?? throw new InvalidOperationException($"Failed to retrieve response '{responseId}' after completion.");
     }
 
     public async IAsyncEnumerable<StreamingResponseEvent> CreateResponseStreamingAsync(
@@ -205,7 +213,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
 
         var idGenerator = new IdGenerator(responseId: null, conversationId: request.Conversation?.Id);
         var responseId = idGenerator.ResponseId;
-        var state = this.InitializeResponse(responseId, request);
+        var state = await this.InitializeResponseAsync(responseId, request, cancellationToken).ConfigureAwait(false);
 
         // Start execution
         state.CompletionTask = this.ExecuteResponseAsync(responseId, state, CancellationToken.None);
@@ -217,10 +225,10 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         }
     }
 
-    public Task<Response?> GetResponseAsync(string responseId, CancellationToken cancellationToken = default)
+    public async Task<Response?> GetResponseAsync(string responseId, CancellationToken cancellationToken = default)
     {
-        this._cache.TryGetValue(responseId, out ResponseState? state);
-        return Task.FromResult(state?.Response);
+        StorageResult<Response>? result = await this._storage.GetResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
+        return result?.Value;
     }
 
     public async IAsyncEnumerable<StreamingResponseEvent> GetResponseStreamingAsync(
@@ -228,7 +236,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         int? startingAfter = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (!this._cache.TryGetValue(responseId, out ResponseState? state) || state is null)
+        if (!this._runningResponses.TryGetValue(responseId, out ResponseState? state))
         {
             yield break;
         }
@@ -242,48 +250,52 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
 
     public async Task<Response> CancelResponseAsync(string responseId, CancellationToken cancellationToken = default)
     {
-        if (!this._cache.TryGetValue(responseId, out ResponseState? state) || state is null)
+        StorageResult<Response>? result = await this._storage.GetResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
+        if (result is null)
         {
             throw new InvalidOperationException($"Response '{responseId}' not found.");
         }
 
-        if (state.Response is null || state.Response.Background != true)
+        if (result.Value.Background != true)
         {
             throw new InvalidOperationException($"Only background responses can be cancelled. Response '{responseId}' was not created with background=true.");
         }
 
-        if (state.IsTerminal)
+        if (result.Value.IsTerminal)
         {
             throw new InvalidOperationException($"Response '{responseId}' is already in a terminal state and cannot be cancelled.");
         }
 
         // Cancel the execution
-        state.CancellationTokenSource?.Cancel();
+        if (!this._runningResponses.TryGetValue(responseId, out ResponseState? state))
+        {
+            throw new InvalidOperationException($"Response '{responseId}' is not running.");
+        }
 
+        state.CancellationTokenSource.Cancel();
+
+        // Wait for the completion task if available
         if (state.CompletionTask is { } task)
         {
             await task.WaitAsync(cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         }
 
-        return state.Response;
+        // Get the updated response
+        result = await this._storage.GetResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
+        return result?.Value ?? throw new InvalidOperationException($"Failed to retrieve response '{responseId}' after cancellation.");
     }
 
-    public Task<bool> DeleteResponseAsync(string responseId, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteResponseAsync(string responseId, CancellationToken cancellationToken = default)
     {
-        if (!this._cache.TryGetValue(responseId, out ResponseState? state))
+        bool deleted = await this._storage.DeleteResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
+        if (deleted && this._runningResponses.TryRemove(responseId, out ResponseState? state))
         {
-            return Task.FromResult(false);
+            state.CancellationTokenSource.Dispose();
         }
-
-        // Cancel any ongoing execution
-        state?.CancellationTokenSource?.Cancel();
-
-        // Remove the response
-        this._cache.Remove(responseId);
-        return Task.FromResult(true);
+        return deleted;
     }
 
-    public Task<ListResponse<ItemResource>> ListResponseInputItemsAsync(
+    public async Task<ListResponse<ItemResource>> ListResponseInputItemsAsync(
         string responseId,
         int? limit = null,
         SortOrder? order = null,
@@ -294,17 +306,12 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         int effectiveLimit = Math.Clamp(limit ?? IResponsesService.DefaultListLimit, 1, 100);
         SortOrder effectiveOrder = order ?? SortOrder.Descending;
 
-        if (!this._cache.TryGetValue(responseId, out ResponseState? state))
+        if (!this._runningResponses.TryGetValue(responseId, out ResponseState? state))
         {
             throw new InvalidOperationException($"Response '{responseId}' not found.");
         }
 
-        if (state is null)
-        {
-            throw new InvalidOperationException($"Response '{responseId}' state is null.");
-        }
-
-        var itemResources = GetInputItems(responseId, state);
+        List<ItemResource> itemResources = GetInputItems(responseId, state);
 
         // Apply ordering
         if (effectiveOrder == SortOrder.Descending)
@@ -313,7 +320,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         }
 
         // Apply pagination
-        var filtered = itemResources.AsEnumerable();
+        IEnumerable<ItemResource> filtered = itemResources.AsEnumerable();
 
         if (!string.IsNullOrEmpty(after))
         {
@@ -333,30 +340,30 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
             }
         }
 
-        var result = filtered.Take(effectiveLimit + 1).ToList();
-        var hasMore = result.Count > effectiveLimit;
+        List<ItemResource> result = filtered.Take(effectiveLimit + 1).ToList();
+        bool hasMore = result.Count > effectiveLimit;
         if (hasMore)
         {
             result = result.Take(effectiveLimit).ToList();
         }
 
-        return Task.FromResult(new ListResponse<ItemResource>
+        return await Task.FromResult(new ListResponse<ItemResource>
         {
             Data = result,
             FirstId = result.FirstOrDefault()?.Id,
             LastId = result.LastOrDefault()?.Id,
             HasMore = hasMore
-        });
+        }).ConfigureAwait(false);
     }
 
-    private ResponseState InitializeResponse(string responseId, CreateResponse request)
+    private async Task<ResponseState> InitializeResponseAsync(string responseId, CreateResponse request, CancellationToken cancellationToken)
     {
-        var metadata = request.Metadata ?? [];
+        Dictionary<string, string> metadata = request.Metadata ?? [];
 
         // Create initial response
         // Background responses always start as "queued", non-background as "in_progress"
-        var initialStatus = request.Background is true ? ResponseStatus.Queued : ResponseStatus.InProgress;
-        var response = new Response
+        ResponseStatus initialStatus = request.Background is true ? ResponseStatus.Queued : ResponseStatus.InProgress;
+        Response response = new()
         {
             Agent = request.Agent?.ToAgentId(),
             Background = request.Background,
@@ -393,23 +400,13 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
 #pragma warning restore CS0618 // Type or member is obsolete
         };
 
-        var state = new ResponseState
-        {
-            Response = response,
-            Request = request,
-            CancellationTokenSource = new CancellationTokenSource()
-        };
+        ResponseState state = new(request);
 
-        var entryOptions = this._options.ToMemoryCacheEntryOptions();
-        entryOptions.RegisterPostEvictionCallback((key, value, reason, state) =>
-        {
-            if (value is ResponseState responseState)
-            {
-                responseState.CancellationTokenSource?.Cancel();
-            }
-        });
+        // Store the initial response
+        StorageResult<Response> storeResult = await this._storage.StoreResponseAsync(response, cancellationToken).ConfigureAwait(false);
+        state.CurrentETag = storeResult.ETag;
 
-        this._cache.Set(responseId, state, entryOptions);
+        this._runningResponses[responseId] = state;
 
         return state;
     }
@@ -417,127 +414,196 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
     private async Task ExecuteResponseAsync(string responseId, ResponseState state, CancellationToken cancellationToken)
     {
         await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
-        var request = state.Request!;
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, state.CancellationTokenSource!.Token);
+
+        // Link the state's cancellation token with the provided cancellation token
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, state.CancellationTokenSource.Token);
+        CancellationToken effectiveCt = linkedCts.Token;
 
         try
         {
             // Create agent invocation context
-            var context = new AgentInvocationContext(new IdGenerator(responseId: responseId, conversationId: state.Response?.Conversation?.Id));
-
-            // Collect output items for conversation storage
-            List<ItemResource> outputItems = [];
+            AgentInvocationContext context = new(new IdGenerator(responseId: responseId, conversationId: state.Request.Conversation?.Id));
 
             // Execute using the injected executor
-            await foreach (var streamingEvent in this._executor.ExecuteAsync(context, request, linkedCts.Token).ConfigureAwait(false))
+            await foreach (StreamingResponseEvent streamingEvent in this._executor.ExecuteAsync(context, state.Request, effectiveCt).ConfigureAwait(false))
             {
                 state.AddStreamingEvent(streamingEvent);
 
-                // Collect output items
-                if (streamingEvent is StreamingOutputItemDone itemDone)
+                // Update the stored response
+                if (streamingEvent is IStreamingResponseEventWithResponse responseEvent)
                 {
-                    outputItems.Add(itemDone.Item);
-                }
-            }
-
-            // Add both input and output items to conversation storage if available
-            // This happens AFTER successful execution, in line with OpenAI's behavior
-            if (this._conversationStorage is not null && request.Conversation?.Id is not null)
-            {
-                var inputItems = GetInputItems(responseId, state);
-                var allItems = new List<ItemResource>(inputItems.Count + outputItems.Count);
-                allItems.AddRange(inputItems);
-                allItems.AddRange(outputItems);
-
-                if (allItems.Count > 0)
-                {
-                    await this._conversationStorage.AddItemsAsync(request.Conversation.Id, allItems, linkedCts.Token).ConfigureAwait(false);
+                    await this.UpdateStoredResponseAsync(responseEvent.Response, state).ConfigureAwait(false);
                 }
             }
 
             // Update response status to completed if not already in a terminal state
             if (!state.IsTerminal)
             {
-                state.Response = state.Response! with
-                {
-                    Status = ResponseStatus.Completed
-                };
-
-                var sequenceNumber = state.StreamingUpdates.Count + 1;
-                var completedEvent = new StreamingResponseCompleted
-                {
-                    SequenceNumber = sequenceNumber,
-                    Response = state.Response
-                };
-
-                state.AddStreamingEvent(completedEvent);
+                await this.UpdateResponseStatusAsync(responseId, state, ResponseStatus.Completed, null).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
         {
             // Update response status to cancelled
-            state.Response = state.Response! with
-            {
-                Status = ResponseStatus.Cancelled
-            };
-
-            var sequenceNumber = state.StreamingUpdates.Count + 1;
-            var cancelledEvent = new StreamingResponseCancelled
-            {
-                SequenceNumber = sequenceNumber,
-                Response = state.Response
-            };
-
-            state.AddStreamingEvent(cancelledEvent);
+            await this.UpdateResponseStatusAsync(responseId, state, ResponseStatus.Cancelled, null).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             // Update response status to failed
-            state.Response = state.Response! with
+            ResponseError error = new()
             {
-                Status = ResponseStatus.Failed,
-                Error = new ResponseError
-                {
-                    Code = "execution_error",
-                    Message = ex.Message
-                }
+                Code = "execution_error",
+                Message = ex.Message
             };
-
-            var sequenceNumber = state.StreamingUpdates.Count + 1;
-            var failedEvent = new StreamingResponseFailed
-            {
-                SequenceNumber = sequenceNumber,
-                Response = state.Response
-            };
-
-            state.AddStreamingEvent(failedEvent);
+            await this.UpdateResponseStatusAsync(responseId, state, ResponseStatus.Failed, error).ConfigureAwait(false);
         }
         finally
         {
+            // Mark completion time for cleanup
+            state.CompletedAt = DateTimeOffset.UtcNow;
+
             // Signal one final time to unblock any waiting consumers
             state.SignalUpdate();
         }
     }
 
+    private async Task UpdateStoredResponseAsync(Response response, ResponseState state)
+    {
+        // Update output items from state
+        List<ItemResource> outputItems = state.GetOutputItems();
+        Response updatedResponse = response with { Output = outputItems };
+
+        StorageResult<Response>? result = await this._storage.UpdateResponseAsync(updatedResponse, state.CurrentETag!, CancellationToken.None).ConfigureAwait(false);
+        if (result is not null)
+        {
+            state.CurrentETag = result.ETag;
+        }
+    }
+
+    private async Task UpdateResponseStatusAsync(string responseId, ResponseState state, ResponseStatus status, ResponseError? error)
+    {
+        StorageResult<Response>? currentResult = await this._storage.GetResponseAsync(responseId, CancellationToken.None).ConfigureAwait(false);
+        if (currentResult is null)
+        {
+            return;
+        }
+
+        Response updatedResponse = currentResult.Value with
+        {
+            Status = status,
+            Error = error,
+            Output = state.GetOutputItems()
+        };
+
+        StorageResult<Response>? result = await this._storage.UpdateResponseAsync(updatedResponse, state.CurrentETag!, CancellationToken.None).ConfigureAwait(false);
+        if (result is not null)
+        {
+            state.CurrentETag = result.ETag;
+            state.IsTerminal = updatedResponse.IsTerminal;
+
+            // Add a terminal event
+            int sequenceNumber = state.StreamingUpdates.Count + 1;
+            StreamingResponseEvent terminalEvent = status switch
+            {
+                ResponseStatus.Completed => new StreamingResponseCompleted
+                {
+                    SequenceNumber = sequenceNumber,
+                    Response = updatedResponse
+                },
+                ResponseStatus.Cancelled => new StreamingResponseCancelled
+                {
+                    SequenceNumber = sequenceNumber,
+                    Response = updatedResponse
+                },
+                ResponseStatus.Failed => new StreamingResponseFailed
+                {
+                    SequenceNumber = sequenceNumber,
+                    Response = updatedResponse
+                },
+                _ => throw new InvalidOperationException($"Unexpected terminal status: {status}")
+            };
+
+            state.AddStreamingEvent(terminalEvent);
+        }
+    }
+
     private static List<ItemResource> GetInputItems(string responseId, ResponseState state)
     {
-        var itemResources = new List<ItemResource>();
-        if (state.Request is not null)
+        // Use a deterministic random seed. We add 1 to avoid clashing with the output message ids.
+        int randomSeed = responseId.GetHashCode() + 1;
+        IdGenerator idGenerator = new(responseId: responseId, conversationId: state.Request.Conversation?.Id, randomSeed: randomSeed);
+        List<ItemResource> itemResources = [];
+        foreach (InputMessage inputMessage in state.Request.Input.GetInputMessages())
         {
-            // Use a deterministic random seed. We add 1 to avoid clashing with the output message ids.
-            var randomSeed = responseId.GetHashCode() + 1;
-            var idGenerator = new IdGenerator(responseId: responseId, conversationId: state.Response?.Conversation?.Id, randomSeed: randomSeed);
-            foreach (var inputMessage in state.Request.Input.GetInputMessages())
-            {
-                itemResources.AddRange(inputMessage.ToItemResource(idGenerator));
-            }
+            itemResources.AddRange(inputMessage.ToItemResource(idGenerator));
         }
 
         return itemResources;
     }
 
+    private void CleanupCompletedResponses(object? state)
+    {
+        if (this._disposed)
+        {
+            return;
+        }
+
+        try
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            List<string> responsesToRemove = [];
+
+            foreach (KeyValuePair<string, ResponseState> kvp in this._runningResponses)
+            {
+                // Only clean up responses that have completed and exceeded the retention period
+                if (kvp.Value.CompletedAt.HasValue &&
+                    now - kvp.Value.CompletedAt.Value >= this._completedResponseRetentionPeriod)
+                {
+                    responsesToRemove.Add(kvp.Key);
+                }
+            }
+
+            foreach (string responseId in responsesToRemove)
+            {
+                if (this._runningResponses.TryRemove(responseId, out ResponseState? removedState))
+                {
+                    removedState.CancellationTokenSource.Dispose();
+                    this._logger.LogDebug("Removed completed response '{ResponseId}' after retention period", responseId);
+
+                    // Also remove from storage (fire and forget)
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await this._storage.DeleteResponseAsync(responseId, CancellationToken.None).ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            this._logger.LogWarning(ex, "Failed to delete response '{ResponseId}' from storage during cleanup", responseId);
+                        }
+                    });
+                }
+            }
+
+            if (responsesToRemove.Count > 0)
+            {
+                this._logger.LogInformation("Cleaned up {Count} completed responses", responsesToRemove.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogError(ex, "Error during cleanup of completed responses");
+        }
+    }
+
     public void Dispose()
     {
-        this._cache.Dispose();
+        if (this._disposed)
+        {
+            return;
+        }
+
+        this._disposed = true;
+        this._cleanupTimer.Dispose();
     }
 }

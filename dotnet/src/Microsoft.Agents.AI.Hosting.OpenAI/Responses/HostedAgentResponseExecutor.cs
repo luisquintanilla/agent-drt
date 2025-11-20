@@ -1,10 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -82,24 +85,60 @@ internal sealed class HostedAgentResponseExecutor : IResponseExecutor
     {
         string agentName = GetAgentName(request)!;
         AIAgent agent = this._serviceProvider.GetRequiredKeyedService<AIAgent>(agentName);
-        var chatOptions = new ChatOptions
+        ResponsesAgentFeatureCollection features = new();
+        ChatOptions chatOptions = new()
         {
-            ConversationId = request.Conversation?.Id,
             Temperature = (float?)request.Temperature,
             TopP = (float?)request.TopP,
             MaxOutputTokens = request.MaxOutputTokens,
             Instructions = request.Instructions,
             ModelId = request.Model,
         };
-        var options = new ChatClientAgentRunOptions(chatOptions);
-        var messages = new List<ChatMessage>();
-
-        foreach (var inputMessage in request.Input.GetInputMessages())
+        features.Set(chatOptions);
+        AgentRunOptions options = new()
         {
-            messages.Add(inputMessage.ToChatMessage());
+            Features = features,
+        };
+
+        if (!string.IsNullOrEmpty(context.ConversationId))
+        {
+            var conversationStorage = this._serviceProvider.GetService<IConversationStorage>();
+            if (conversationStorage is not null)
+            {
+                ConversationStoreChatMessageStore messageStore = new(
+                    conversationStorage,
+                    context.ConversationId,
+                    context.IdGenerator,
+                    context.JsonSerializerOptions);
+
+                features.Set<ChatMessageStore>(messageStore);
+            }
+            else
+            {
+                this._logger.LogWarning("IConversationStorage not available");
+            }
+        }
+        else if (!string.IsNullOrEmpty(request.PreviousResponseId))
+        {
+            IResponseStorage? responseStorage = this._serviceProvider.GetService<IResponseStorage>();
+            if (responseStorage is not null)
+            {
+                // Create a ChatMessageStore that uses the response storage to fetch the chain
+                ResponseStoreChatMessageStore messageStore = new(
+                    responseStorage,
+                    request.PreviousResponseId,
+                    context.JsonSerializerOptions);
+
+                features.Set<ChatMessageStore>(messageStore);
+            }
+            else
+            {
+                this._logger.LogWarning("IResponseStorage not available to fetch previous response '{PreviousResponseId}'", request.PreviousResponseId);
+            }
         }
 
-        await foreach (var streamingEvent in agent.RunStreamingAsync(messages, options: options, cancellationToken: cancellationToken)
+        var inputMessages = request.Input.GetInputMessages().ConvertAll(x => x.ToChatMessage());
+        await foreach (StreamingResponseEvent streamingEvent in agent.RunStreamingAsync(inputMessages, options: options, cancellationToken: cancellationToken)
             .ToStreamingResponseAsync(request, context, cancellationToken).ConfigureAwait(false))
         {
             yield return streamingEvent;
@@ -122,5 +161,45 @@ internal sealed class HostedAgentResponseExecutor : IResponseExecutor
         }
 
         return agentName;
+    }
+
+    private sealed class ResponsesAgentFeatureCollection : IAgentFeatureCollection
+    {
+        private readonly Dictionary<Type, object> _features = [];
+
+        public object? this[Type key]
+        {
+            get => this._features[key];
+            set
+            {
+                if (value is null)
+                {
+                    if (this._features.Remove(key, out _))
+                    {
+                        ++this.Revision;
+                    }
+                }
+                else
+                {
+                    this._features[key] = value;
+                    ++this.Revision;
+                }
+            }
+        }
+
+        public bool IsReadOnly { get; }
+        public int Revision { get; private set; }
+
+        public TFeature? Get<TFeature>()
+        {
+            this._features.TryGetValue(typeof(TFeature), out object? feature);
+            return feature is TFeature typedFeature ? typedFeature : default;
+        }
+
+        public IEnumerator<KeyValuePair<Type, object>> GetEnumerator() => this._features.GetEnumerator();
+
+        public void Set<TFeature>(TFeature? instance) => this[typeof(TFeature)] = instance;
+
+        IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
     }
 }
