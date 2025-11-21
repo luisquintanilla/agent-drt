@@ -12,7 +12,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// <summary>
 /// Configuration options for a text response from the model.
 /// </summary>
-internal sealed class TextConfiguration
+public sealed class TextConfiguration
 {
     /// <summary>
     /// The format configuration for the text response.
@@ -38,7 +38,7 @@ internal sealed class TextConfiguration
 [JsonDerivedType(typeof(ResponseTextFormatConfigurationText), "text")]
 [JsonDerivedType(typeof(ResponseTextFormatConfigurationJsonObject), "json_object")]
 [JsonDerivedType(typeof(ResponseTextFormatConfigurationJsonSchema), "json_schema")]
-internal abstract class ResponseTextFormatConfiguration
+public abstract class ResponseTextFormatConfiguration
 {
     /// <summary>
     /// The type of response format.
@@ -50,7 +50,7 @@ internal abstract class ResponseTextFormatConfiguration
 /// <summary>
 /// Plain text response format configuration.
 /// </summary>
-internal sealed class ResponseTextFormatConfigurationText : ResponseTextFormatConfiguration
+public sealed class ResponseTextFormatConfigurationText : ResponseTextFormatConfiguration
 {
     /// <summary>
     /// Gets the type of response format. Always "text".
@@ -63,7 +63,7 @@ internal sealed class ResponseTextFormatConfigurationText : ResponseTextFormatCo
 /// JSON object response format configuration.
 /// Ensures the message the model generates is valid JSON.
 /// </summary>
-internal sealed class ResponseTextFormatConfigurationJsonObject : ResponseTextFormatConfiguration
+public sealed class ResponseTextFormatConfigurationJsonObject : ResponseTextFormatConfiguration
 {
     /// <summary>
     /// Gets the type of response format. Always "json_object".
@@ -75,7 +75,7 @@ internal sealed class ResponseTextFormatConfigurationJsonObject : ResponseTextFo
 /// <summary>
 /// JSON schema response format configuration with structured output schema.
 /// </summary>
-internal sealed class ResponseTextFormatConfigurationJsonSchema : ResponseTextFormatConfiguration
+public sealed class ResponseTextFormatConfigurationJsonSchema : ResponseTextFormatConfiguration
 {
     /// <summary>
     /// Gets the type of response format. Always "json_schema".

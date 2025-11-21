@@ -14,7 +14,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 /// JSON converter for enums that uses snake_case naming convention.
 /// </summary>
 /// <typeparam name="T">The enum type to convert.</typeparam>
-internal sealed class SnakeCaseEnumConverter<T> : JsonStringEnumConverter<T> where T : struct, Enum
+public sealed class SnakeCaseEnumConverter<T> : JsonStringEnumConverter<T> where T : struct, Enum
 {
     /// <summary>
     /// Creates a new instance of the <see cref="SnakeCaseEnumConverter{T}"/> class.

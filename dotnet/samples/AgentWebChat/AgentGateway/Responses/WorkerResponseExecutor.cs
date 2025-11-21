@@ -11,7 +11,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using AgentGateway.Responses.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Extensions.Logging;
 
 namespace AgentGateway.Responses;

@@ -12,7 +12,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Models;
 /// <summary>
 /// Response for a delete operation.
 /// </summary>
-internal sealed class DeleteResponse
+public sealed class DeleteResponse
 {
     /// <summary>
     /// The ID of the deleted object.

@@ -21,7 +21,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// <summary>
 /// Provides bidirectional conversion between <see cref="ItemResource"/> and <see cref="ChatMessage"/> types.
 /// </summary>
-internal static class ItemResourceChatMessageConverter
+public static class ItemResourceChatMessageConverter
 {
     private static readonly JsonSerializerOptions s_defaultJsonOptions = new();
 

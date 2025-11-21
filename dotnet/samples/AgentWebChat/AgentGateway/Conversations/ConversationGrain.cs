@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using AgentGateway.Conversations.Models;
-using AgentGateway.Models;
-using AgentGateway.Responses.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Orleans;
 using Orleans.Runtime;
 

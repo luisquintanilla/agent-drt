@@ -19,13 +19,15 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Streaming;
 /// <summary>
 /// A generator for streaming events from error content.
 /// </summary>
-internal sealed class ErrorContentEventGenerator(
+public sealed class ErrorContentEventGenerator(
         IdGenerator idGenerator,
         SequenceNumber seq,
         int outputIndex) : StreamingEventGenerator
 {
+    /// <inheritdoc />
     public override bool IsSupported(AIContent content) => content is ErrorContent;
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> ProcessContent(AIContent content)
     {
         if (content is not ErrorContent)
@@ -79,5 +81,6 @@ internal sealed class ErrorContentEventGenerator(
         };
     }
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> Complete() => [];
 }

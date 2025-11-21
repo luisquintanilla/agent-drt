@@ -12,7 +12,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations.Models;
 /// <summary>
 /// Request to update an existing conversation.
 /// </summary>
-internal sealed class UpdateConversationRequest
+public sealed class UpdateConversationRequest
 {
     /// <summary>
     /// Set of 16 key-value pairs that can be attached to a conversation.

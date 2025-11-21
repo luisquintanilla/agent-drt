@@ -27,7 +27,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// This store walks backwards through the response chain using PreviousResponseId to build
 /// the complete message history.
 /// </summary>
-internal sealed class ResponseStoreChatMessageStore : ChatMessageStore
+public sealed class ResponseStoreChatMessageStore : ChatMessageStore
 {
     private readonly IResponseStorage _responseStorage;
     private readonly string _responseId;

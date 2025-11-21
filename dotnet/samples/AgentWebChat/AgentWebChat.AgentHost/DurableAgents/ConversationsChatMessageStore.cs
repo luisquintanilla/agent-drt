@@ -2,8 +2,8 @@
 
 using System.Text.Json;
 using AgentContracts;
-using AgentGateway.Models;
-using AgentGateway.Responses.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 

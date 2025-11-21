@@ -19,7 +19,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Streaming;
 /// A state machine for generating streaming events from assistant message content.
 /// Processes AIContent instances one at a time and emits appropriate streaming events based on internal state.
 /// </summary>
-internal sealed class AssistantMessageEventGenerator(
+public sealed class AssistantMessageEventGenerator(
         IdGenerator idGenerator,
         SequenceNumber seq,
         int outputIndex) : StreamingEventGenerator
@@ -38,8 +38,10 @@ internal sealed class AssistantMessageEventGenerator(
         Completed
     }
 
+    /// <inheritdoc />
     public override bool IsSupported(AIContent content) => content is TextContent;
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> ProcessContent(AIContent content)
     {
         if (this._currentState == State.Completed)
@@ -95,6 +97,7 @@ internal sealed class AssistantMessageEventGenerator(
         };
     }
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> Complete()
     {
         if (this._currentState == State.Completed)

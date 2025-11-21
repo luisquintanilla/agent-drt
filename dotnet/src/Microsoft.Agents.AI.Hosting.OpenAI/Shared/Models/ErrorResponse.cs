@@ -11,7 +11,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Models;
 /// <summary>
 /// Represents an error response from the OpenAI APIs.
 /// </summary>
-internal sealed class ErrorResponse
+public sealed class ErrorResponse
 {
     /// <summary>
     /// Gets the error details.
@@ -23,7 +23,7 @@ internal sealed class ErrorResponse
 /// <summary>
 /// Represents the details of an error.
 /// </summary>
-internal sealed class ErrorDetails
+public sealed class ErrorDetails
 {
     /// <summary>
     /// Gets the error message.

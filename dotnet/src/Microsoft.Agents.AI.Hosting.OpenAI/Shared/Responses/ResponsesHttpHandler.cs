@@ -21,7 +21,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// <summary>
 /// Handles route requests for OpenAI Responses API endpoints.
 /// </summary>
-internal sealed class ResponsesHttpHandler
+public sealed class ResponsesHttpHandler
 {
     private readonly IResponsesService _responsesService;
 

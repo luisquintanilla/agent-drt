@@ -20,7 +20,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI;
 /// IResult implementation for streaming JSON data using Server-Sent Events (SSE).
 /// </summary>
 /// <typeparam name="T">The type of items to stream.</typeparam>
-internal sealed class SseJsonResult<T> : IResult
+public sealed class SseJsonResult<T> : IResult
 {
     private readonly IAsyncEnumerable<T> _events;
     private readonly JsonTypeInfo<T> _jsonTypeInfo;

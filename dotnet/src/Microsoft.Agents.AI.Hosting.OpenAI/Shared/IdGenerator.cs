@@ -17,7 +17,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI;
 /// <summary>
 /// Generates IDs with partition keys.
 /// </summary>
-internal sealed partial class IdGenerator
+public sealed partial class IdGenerator
 {
     private readonly string _partitionId;
     private readonly Random? _random;

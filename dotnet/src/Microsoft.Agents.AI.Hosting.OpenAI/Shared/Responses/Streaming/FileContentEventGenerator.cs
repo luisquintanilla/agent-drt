@@ -19,16 +19,18 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Streaming;
 /// <summary>
 /// A generator for streaming events from file content (non-image, non-audio DataContent).
 /// </summary>
-internal sealed class FileContentEventGenerator(
+public sealed class FileContentEventGenerator(
         IdGenerator idGenerator,
         SequenceNumber seq,
         int outputIndex) : StreamingEventGenerator
 {
+    /// <inheritdoc />
     public override bool IsSupported(AIContent content) =>
         content is DataContent dataContent &&
         !dataContent.HasTopLevelMediaType("image") &&
         !dataContent.HasTopLevelMediaType("audio");
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> ProcessContent(AIContent content)
     {
         if (content is not DataContent fileData ||
@@ -84,5 +86,6 @@ internal sealed class FileContentEventGenerator(
         };
     }
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> Complete() => [];
 }

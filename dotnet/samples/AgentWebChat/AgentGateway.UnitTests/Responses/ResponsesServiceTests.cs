@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
-using AgentGateway.Models;
-using AgentGateway.Responses;
-using AgentGateway.Responses.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Moq;
 
 namespace AgentGateway.UnitTests.Responses;

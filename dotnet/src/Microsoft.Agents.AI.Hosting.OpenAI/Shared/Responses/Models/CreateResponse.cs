@@ -14,7 +14,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// <summary>
 /// Request to create a model response.
 /// </summary>
-internal sealed record CreateResponse
+public sealed record CreateResponse
 {
     /// <summary>
     /// Text, image, or file inputs to the model, used to generate a response.

@@ -14,7 +14,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Models;
 /// Generic list response for paginated results.
 /// Used across the OpenAI API for listing resources.
 /// </summary>
-internal sealed class ListResponse<T>
+public sealed class ListResponse<T>
 {
     /// <summary>
     /// The object type, always "list".

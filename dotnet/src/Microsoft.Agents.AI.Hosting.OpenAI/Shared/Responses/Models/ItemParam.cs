@@ -20,7 +20,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// Unlike ItemResource, ItemParam does not have an ID field - the server generates IDs upon creation.
 /// </summary>
 [JsonConverter(typeof(ItemParamConverter))]
-internal abstract class ItemParam
+public abstract class ItemParam
 {
     /// <summary>
     /// The type of the item.
@@ -33,7 +33,7 @@ internal abstract class ItemParam
 /// Base class for message item parameters.
 /// </summary>
 [JsonConverter(typeof(ResponsesMessageItemParamConverter))]
-internal abstract class ResponsesMessageItemParam : ItemParam
+public abstract class ResponsesMessageItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for message items.
@@ -53,7 +53,7 @@ internal abstract class ResponsesMessageItemParam : ItemParam
 /// <summary>
 /// A user message item parameter.
 /// </summary>
-internal sealed class ResponsesUserMessageItemParam : ResponsesMessageItemParam
+public sealed class ResponsesUserMessageItemParam : ResponsesMessageItemParam
 {
     /// <summary>
     /// The constant role type identifier for user messages.
@@ -73,7 +73,7 @@ internal sealed class ResponsesUserMessageItemParam : ResponsesMessageItemParam
 /// <summary>
 /// An assistant message item parameter.
 /// </summary>
-internal sealed class ResponsesAssistantMessageItemParam : ResponsesMessageItemParam
+public sealed class ResponsesAssistantMessageItemParam : ResponsesMessageItemParam
 {
     /// <summary>
     /// The constant role type identifier for assistant messages.
@@ -93,7 +93,7 @@ internal sealed class ResponsesAssistantMessageItemParam : ResponsesMessageItemP
 /// <summary>
 /// A system message item parameter.
 /// </summary>
-internal sealed class ResponsesSystemMessageItemParam : ResponsesMessageItemParam
+public sealed class ResponsesSystemMessageItemParam : ResponsesMessageItemParam
 {
     /// <summary>
     /// The constant role type identifier for system messages.
@@ -113,7 +113,7 @@ internal sealed class ResponsesSystemMessageItemParam : ResponsesMessageItemPara
 /// <summary>
 /// A developer message item parameter.
 /// </summary>
-internal sealed class ResponsesDeveloperMessageItemParam : ResponsesMessageItemParam
+public sealed class ResponsesDeveloperMessageItemParam : ResponsesMessageItemParam
 {
     /// <summary>
     /// The constant role type identifier for developer messages.
@@ -133,7 +133,7 @@ internal sealed class ResponsesDeveloperMessageItemParam : ResponsesMessageItemP
 /// <summary>
 /// A function tool call item parameter.
 /// </summary>
-internal sealed class FunctionToolCallItemParam : ItemParam
+public sealed class FunctionToolCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for function call items.
@@ -165,7 +165,7 @@ internal sealed class FunctionToolCallItemParam : ItemParam
 /// <summary>
 /// A function tool call output item parameter.
 /// </summary>
-internal sealed class FunctionToolCallOutputItemParam : ItemParam
+public sealed class FunctionToolCallOutputItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for function call output items.
@@ -191,7 +191,7 @@ internal sealed class FunctionToolCallOutputItemParam : ItemParam
 /// <summary>
 /// A file search tool call item parameter.
 /// </summary>
-internal sealed class FileSearchToolCallItemParam : ItemParam
+public sealed class FileSearchToolCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for file search call items.
@@ -217,7 +217,7 @@ internal sealed class FileSearchToolCallItemParam : ItemParam
 /// <summary>
 /// A computer tool call item parameter.
 /// </summary>
-internal sealed class ComputerToolCallItemParam : ItemParam
+public sealed class ComputerToolCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for computer call items.
@@ -249,7 +249,7 @@ internal sealed class ComputerToolCallItemParam : ItemParam
 /// <summary>
 /// A computer tool call output item parameter.
 /// </summary>
-internal sealed class ComputerToolCallOutputItemParam : ItemParam
+public sealed class ComputerToolCallOutputItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for computer call output items.
@@ -281,7 +281,7 @@ internal sealed class ComputerToolCallOutputItemParam : ItemParam
 /// <summary>
 /// A web search tool call item parameter.
 /// </summary>
-internal sealed class WebSearchToolCallItemParam : ItemParam
+public sealed class WebSearchToolCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for web search call items.
@@ -301,7 +301,7 @@ internal sealed class WebSearchToolCallItemParam : ItemParam
 /// <summary>
 /// A reasoning item parameter.
 /// </summary>
-internal sealed class ReasoningItemParam : ItemParam
+public sealed class ReasoningItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for reasoning items.
@@ -327,7 +327,7 @@ internal sealed class ReasoningItemParam : ItemParam
 /// <summary>
 /// An item reference item parameter.
 /// </summary>
-internal sealed class ItemReferenceItemParam : ItemParam
+public sealed class ItemReferenceItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for item reference items.
@@ -347,7 +347,7 @@ internal sealed class ItemReferenceItemParam : ItemParam
 /// <summary>
 /// An image generation tool call item parameter.
 /// </summary>
-internal sealed class ImageGenerationToolCallItemParam : ItemParam
+public sealed class ImageGenerationToolCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for image generation call items.
@@ -367,7 +367,7 @@ internal sealed class ImageGenerationToolCallItemParam : ItemParam
 /// <summary>
 /// A code interpreter tool call item parameter.
 /// </summary>
-internal sealed class CodeInterpreterToolCallItemParam : ItemParam
+public sealed class CodeInterpreterToolCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for code interpreter call items.
@@ -400,7 +400,7 @@ internal sealed class CodeInterpreterToolCallItemParam : ItemParam
 /// <summary>
 /// A local shell tool call item parameter.
 /// </summary>
-internal sealed class LocalShellToolCallItemParam : ItemParam
+public sealed class LocalShellToolCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for local shell call items.
@@ -426,7 +426,7 @@ internal sealed class LocalShellToolCallItemParam : ItemParam
 /// <summary>
 /// A local shell tool call output item parameter.
 /// </summary>
-internal sealed class LocalShellToolCallOutputItemParam : ItemParam
+public sealed class LocalShellToolCallOutputItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for local shell call output items.
@@ -446,7 +446,7 @@ internal sealed class LocalShellToolCallOutputItemParam : ItemParam
 /// <summary>
 /// An MCP list tools item parameter.
 /// </summary>
-internal sealed class MCPListToolsItemParam : ItemParam
+public sealed class MCPListToolsItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for MCP list tools items.
@@ -478,7 +478,7 @@ internal sealed class MCPListToolsItemParam : ItemParam
 /// <summary>
 /// An MCP approval request item parameter.
 /// </summary>
-internal sealed class MCPApprovalRequestItemParam : ItemParam
+public sealed class MCPApprovalRequestItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for MCP approval request items.
@@ -510,7 +510,7 @@ internal sealed class MCPApprovalRequestItemParam : ItemParam
 /// <summary>
 /// An MCP approval response item parameter.
 /// </summary>
-internal sealed class MCPApprovalResponseItemParam : ItemParam
+public sealed class MCPApprovalResponseItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for MCP approval response items.
@@ -542,7 +542,7 @@ internal sealed class MCPApprovalResponseItemParam : ItemParam
 /// <summary>
 /// An MCP call item parameter.
 /// </summary>
-internal sealed class MCPCallItemParam : ItemParam
+public sealed class MCPCallItemParam : ItemParam
 {
     /// <summary>
     /// The constant item type identifier for MCP call items.

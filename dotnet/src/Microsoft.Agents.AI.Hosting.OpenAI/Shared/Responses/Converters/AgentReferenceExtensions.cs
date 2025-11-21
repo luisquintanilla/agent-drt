@@ -13,7 +13,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 /// <summary>
 /// Extension methods for converting between model types.
 /// </summary>
-internal static class AgentReferenceExtensions
+public static class AgentReferenceExtensions
 {
     /// <summary>
     /// Converts an AgentReference to an AgentId.

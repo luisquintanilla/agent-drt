@@ -17,7 +17,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// Optional service for indexing conversations by agent ID.
 /// This is a non-standard extension to the OpenAI Conversations API.
 /// </summary>
-internal interface IAgentConversationIndex
+public interface IAgentConversationIndex
 {
     /// <summary>
     /// Adds a conversation to the index for the specified agent.

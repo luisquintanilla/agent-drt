@@ -3,11 +3,11 @@
 using System;
 using System.Net.Http;
 using AgentContracts;
-using AgentGateway;
+using Microsoft.Agents.AI.Hosting.OpenAI;
 using AgentGateway.Conversations;
 using AgentGateway.DevUI;
 using AgentGateway.Health;
-using AgentGateway.Responses;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using AgentGateway.Utilities;
 using Microsoft.Agents.AI.DevUI;
 using Microsoft.AspNetCore.Builder;
@@ -142,7 +142,6 @@ builder.Services.AddSingleton<WorkerHttpForwarder>();
 
 // Register entity provider for DevUI entities API
 builder.Services.AddSingleton<IEntityProvider, WorkerRegistryEntityProvider>();
-builder.AddOpenAIChatCompletions();
 builder.AddOpenAIResponses();
 
 var app = builder.Build();

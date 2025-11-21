@@ -17,7 +17,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// Represents the result of a storage operation with ETag support.
 /// </summary>
 /// <typeparam name="T">The type of the stored value.</typeparam>
-internal sealed record StorageResult<T>
+public sealed record StorageResult<T>
 {
     /// <summary>
     /// Gets the value stored in the result.
@@ -34,7 +34,7 @@ internal sealed record StorageResult<T>
 /// Storage abstraction for response state and metadata.
 /// Implementations should provide thread-safe storage with ETag-based optimistic concurrency control.
 /// </summary>
-internal interface IResponseStorage
+public interface IResponseStorage
 {
     /// <summary>
     /// Stores a response with initial ETag.

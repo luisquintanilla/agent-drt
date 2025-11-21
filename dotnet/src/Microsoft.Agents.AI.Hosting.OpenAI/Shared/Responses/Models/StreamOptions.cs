@@ -11,7 +11,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// <summary>
 /// Options for streaming responses. Only set this when you set stream: true.
 /// </summary>
-internal sealed class StreamOptions
+public sealed class StreamOptions
 {
     /// <summary>
     /// When true, stream obfuscation will be enabled. Stream obfuscation adds random characters

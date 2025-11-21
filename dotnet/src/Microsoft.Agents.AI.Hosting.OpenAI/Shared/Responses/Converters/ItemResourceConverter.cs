@@ -17,7 +17,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 /// <summary>
 /// JSON converter for ItemResource that handles type discrimination.
 /// </summary>
-internal sealed class ItemResourceConverter : JsonConverter<ItemResource>
+public sealed class ItemResourceConverter : JsonConverter<ItemResource>
 {
     /// <inheritdoc/>
     public override ItemResource? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

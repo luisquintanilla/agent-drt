@@ -20,7 +20,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// In-memory implementation of IAgentConversationIndex for development and testing.
 /// This is a non-standard extension to the OpenAI Conversations API.
 /// </summary>
-internal sealed class InMemoryAgentConversationIndex : IAgentConversationIndex, IDisposable
+public sealed class InMemoryAgentConversationIndex : IAgentConversationIndex, IDisposable
 {
     private readonly MemoryCache _cache;
     private readonly InMemoryStorageOptions _options;
@@ -55,11 +55,18 @@ internal sealed class InMemoryAgentConversationIndex : IAgentConversationIndex, 
         }
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryAgentConversationIndex"/> class with default options.
+    /// </summary>
     public InMemoryAgentConversationIndex()
         : this(new InMemoryStorageOptions())
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryAgentConversationIndex"/> class with the specified options.
+    /// </summary>
+    /// <param name="options">The storage options to use.</param>
     public InMemoryAgentConversationIndex(InMemoryStorageOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -119,6 +126,7 @@ internal sealed class InMemoryAgentConversationIndex : IAgentConversationIndex, 
         };
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         // The MemoryCache will call the post-eviction callbacks when disposed,

@@ -18,7 +18,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// Interface for executing response generation.
 /// Implementations can use local execution (AIAgent) or forward to remote workers.
 /// </summary>
-internal interface IResponseExecutor
+public interface IResponseExecutor
 {
     /// <summary>
     /// Validates a create response request before execution.

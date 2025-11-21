@@ -28,7 +28,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// This store converts between <see cref="ChatMessage"/> and <see cref="ItemResource"/> types
 /// to leverage conversation storage capabilities.
 /// </summary>
-internal sealed class ConversationStoreChatMessageStore : ChatMessageStore
+public sealed class ConversationStoreChatMessageStore : ChatMessageStore
 {
     private readonly IConversationStorage _conversationStorage;
     private readonly string _conversationId;

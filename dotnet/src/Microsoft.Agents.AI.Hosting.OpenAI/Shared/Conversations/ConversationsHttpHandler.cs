@@ -25,7 +25,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// <summary>
 /// Handles route requests for OpenAI Conversations API endpoints.
 /// </summary>
-internal sealed class ConversationsHttpHandler
+public sealed class ConversationsHttpHandler
 {
     private readonly IConversationStorage _storage;
     private readonly IAgentConversationIndex? _conversationIndex;

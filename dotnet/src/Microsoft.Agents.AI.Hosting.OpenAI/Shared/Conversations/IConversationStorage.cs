@@ -23,7 +23,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// This interface provides operations specifically designed for conversation management,
 /// going beyond simple key-value storage to support conversation-specific queries and operations.
 /// </summary>
-internal interface IConversationStorage
+public interface IConversationStorage
 {
     /// <summary>
     /// Creates a new conversation.

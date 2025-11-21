@@ -18,7 +18,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// Aligns with the OpenAI typespec: string | InputContent[]
 /// </summary>
 [JsonConverter(typeof(InputMessageContentJsonConverter))]
-internal sealed class InputMessageContent : IEquatable<InputMessageContent>
+public sealed class InputMessageContent : IEquatable<InputMessageContent>
 {
     private InputMessageContent(string text)
     {
@@ -164,7 +164,7 @@ internal sealed class InputMessageContent : IEquatable<InputMessageContent>
 /// <summary>
 /// JSON converter for <see cref="InputMessageContent"/>.
 /// </summary>
-internal sealed class InputMessageContentJsonConverter : JsonConverter<InputMessageContent>
+public sealed class InputMessageContentJsonConverter : JsonConverter<InputMessageContent>
 {
     /// <inheritdoc/>
     public override InputMessageContent? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

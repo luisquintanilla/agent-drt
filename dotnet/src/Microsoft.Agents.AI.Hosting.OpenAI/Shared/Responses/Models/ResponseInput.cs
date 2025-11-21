@@ -17,7 +17,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// Represents the input to a response request, which can be either a simple string or a list of messages.
 /// </summary>
 [JsonConverter(typeof(ResponseInputJsonConverter))]
-internal sealed class ResponseInput : IEquatable<ResponseInput>
+public sealed class ResponseInput : IEquatable<ResponseInput>
 {
     private ResponseInput(string text)
     {
@@ -167,7 +167,7 @@ internal sealed class ResponseInput : IEquatable<ResponseInput>
 /// <summary>
 /// JSON converter for ResponseInput.
 /// </summary>
-internal sealed class ResponseInputJsonConverter : JsonConverter<ResponseInput>
+public sealed class ResponseInputJsonConverter : JsonConverter<ResponseInput>
 {
     /// <inheritdoc/>
     public override ResponseInput? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

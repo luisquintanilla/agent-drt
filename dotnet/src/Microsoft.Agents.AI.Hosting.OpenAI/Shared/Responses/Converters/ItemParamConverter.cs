@@ -17,8 +17,9 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 /// <summary>
 /// JSON converter for ItemParam that handles polymorphic deserialization based on the "type" discriminator.
 /// </summary>
-internal sealed class ItemParamConverter : JsonConverter<ItemParam>
+public sealed class ItemParamConverter : JsonConverter<ItemParam>
 {
+    /// <inheritdoc />
     public override ItemParam? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         using var doc = JsonDocument.ParseValue(ref reader);
@@ -55,6 +56,7 @@ internal sealed class ItemParamConverter : JsonConverter<ItemParam>
         };
     }
 
+    /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, ItemParam value, JsonSerializerOptions options)
     {
         // Use OpenAIJsonContext directly to serialize the concrete type

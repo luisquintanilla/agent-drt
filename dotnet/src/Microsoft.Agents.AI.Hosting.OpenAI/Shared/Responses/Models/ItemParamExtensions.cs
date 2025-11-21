@@ -11,7 +11,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// <summary>
 /// Extension methods for converting ItemParam (input) to ItemResource (output).
 /// </summary>
-internal static class ItemParamExtensions
+public static class ItemParamExtensions
 {
     /// <summary>
     /// Converts an ItemParam (input model) to an ItemResource (output model) by adding server-generated fields.

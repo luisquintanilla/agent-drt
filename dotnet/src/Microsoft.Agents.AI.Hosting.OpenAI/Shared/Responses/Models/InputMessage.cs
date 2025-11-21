@@ -19,7 +19,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// A message input to the model with a role indicating instruction following hierarchy.
 /// Aligns with the OpenAI Responses API InputMessage/EasyInputMessage schema.
 /// </summary>
-internal sealed class InputMessage
+public sealed class InputMessage
 {
     /// <summary>
     /// The role of the message input. One of user, assistant, system, or developer.

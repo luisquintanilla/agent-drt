@@ -19,7 +19,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// Base class for all item resources (output items from a response).
 /// </summary>
 [JsonConverter(typeof(ItemResourceConverter))]
-internal abstract class ItemResource
+public abstract class ItemResource
 {
     /// <summary>
     /// The unique identifier for the item.
@@ -38,7 +38,7 @@ internal abstract class ItemResource
 /// Base class for message item resources.
 /// </summary>
 [JsonConverter(typeof(ResponsesMessageItemResourceConverter))]
-internal abstract class ResponsesMessageItemResource : ItemResource
+public abstract class ResponsesMessageItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for message items.
@@ -64,7 +64,7 @@ internal abstract class ResponsesMessageItemResource : ItemResource
 /// <summary>
 /// An assistant message item resource.
 /// </summary>
-internal sealed class ResponsesAssistantMessageItemResource : ResponsesMessageItemResource
+public sealed class ResponsesAssistantMessageItemResource : ResponsesMessageItemResource
 {
     /// <summary>
     /// The constant role type identifier for assistant messages.
@@ -84,7 +84,7 @@ internal sealed class ResponsesAssistantMessageItemResource : ResponsesMessageIt
 /// <summary>
 /// A user message item resource.
 /// </summary>
-internal sealed class ResponsesUserMessageItemResource : ResponsesMessageItemResource
+public sealed class ResponsesUserMessageItemResource : ResponsesMessageItemResource
 {
     /// <summary>
     /// The constant role type identifier for user messages.
@@ -104,7 +104,7 @@ internal sealed class ResponsesUserMessageItemResource : ResponsesMessageItemRes
 /// <summary>
 /// A system message item resource.
 /// </summary>
-internal sealed class ResponsesSystemMessageItemResource : ResponsesMessageItemResource
+public sealed class ResponsesSystemMessageItemResource : ResponsesMessageItemResource
 {
     /// <summary>
     /// The constant role type identifier for system messages.
@@ -124,7 +124,7 @@ internal sealed class ResponsesSystemMessageItemResource : ResponsesMessageItemR
 /// <summary>
 /// A developer message item resource.
 /// </summary>
-internal sealed class ResponsesDeveloperMessageItemResource : ResponsesMessageItemResource
+public sealed class ResponsesDeveloperMessageItemResource : ResponsesMessageItemResource
 {
     /// <summary>
     /// The constant role type identifier for developer messages.
@@ -144,7 +144,7 @@ internal sealed class ResponsesDeveloperMessageItemResource : ResponsesMessageIt
 /// <summary>
 /// A function tool call item resource.
 /// </summary>
-internal sealed class FunctionToolCallItemResource : ItemResource
+public sealed class FunctionToolCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for function call items.
@@ -182,7 +182,7 @@ internal sealed class FunctionToolCallItemResource : ItemResource
 /// <summary>
 /// A function tool call output item resource.
 /// </summary>
-internal sealed class FunctionToolCallOutputItemResource : ItemResource
+public sealed class FunctionToolCallOutputItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for function call output items.
@@ -215,7 +215,7 @@ internal sealed class FunctionToolCallOutputItemResource : ItemResource
 /// The status of a message item resource.
 /// </summary>
 [JsonConverter(typeof(SnakeCaseEnumConverter<ResponsesMessageItemResourceStatus>))]
-internal enum ResponsesMessageItemResourceStatus
+public enum ResponsesMessageItemResourceStatus
 {
     /// <summary>
     /// The message is completed.
@@ -237,7 +237,7 @@ internal enum ResponsesMessageItemResourceStatus
 /// The status of a function tool call item resource.
 /// </summary>
 [JsonConverter(typeof(SnakeCaseEnumConverter<FunctionToolCallItemResourceStatus>))]
-internal enum FunctionToolCallItemResourceStatus
+public enum FunctionToolCallItemResourceStatus
 {
     /// <summary>
     /// The function call is completed.
@@ -254,7 +254,7 @@ internal enum FunctionToolCallItemResourceStatus
 /// The status of a function tool call output item resource.
 /// </summary>
 [JsonConverter(typeof(SnakeCaseEnumConverter<FunctionToolCallOutputItemResourceStatus>))]
-internal enum FunctionToolCallOutputItemResourceStatus
+public enum FunctionToolCallOutputItemResourceStatus
 {
     /// <summary>
     /// The function call output is completed.
@@ -273,7 +273,7 @@ internal enum FunctionToolCallOutputItemResourceStatus
 [JsonDerivedType(typeof(ItemContentOutputText), "output_text")]
 [JsonDerivedType(typeof(ItemContentOutputAudio), "output_audio")]
 [JsonDerivedType(typeof(ItemContentRefusal), "refusal")]
-internal abstract class ItemContent
+public abstract class ItemContent
 {
     /// <summary>
     /// The type of the content.
@@ -292,7 +292,7 @@ internal abstract class ItemContent
 /// <summary>
 /// Text input content.
 /// </summary>
-internal sealed class ItemContentInputText : ItemContent
+public sealed class ItemContentInputText : ItemContent
 {
     /// <inheritdoc/>
     [JsonIgnore]
@@ -308,7 +308,7 @@ internal sealed class ItemContentInputText : ItemContent
 /// <summary>
 /// Audio input content.
 /// </summary>
-internal sealed class ItemContentInputAudio : ItemContent
+public sealed class ItemContentInputAudio : ItemContent
 {
     /// <inheritdoc/>
     [JsonIgnore]
@@ -330,7 +330,7 @@ internal sealed class ItemContentInputAudio : ItemContent
 /// <summary>
 /// Image input content.
 /// </summary>
-internal sealed class ItemContentInputImage : ItemContent
+public sealed class ItemContentInputImage : ItemContent
 {
     /// <inheritdoc/>
     [JsonIgnore]
@@ -359,7 +359,7 @@ internal sealed class ItemContentInputImage : ItemContent
 /// <summary>
 /// File input content.
 /// </summary>
-internal sealed class ItemContentInputFile : ItemContent
+public sealed class ItemContentInputFile : ItemContent
 {
     /// <inheritdoc/>
     [JsonIgnore]
@@ -387,7 +387,7 @@ internal sealed class ItemContentInputFile : ItemContent
 /// <summary>
 /// Text output content.
 /// </summary>
-internal sealed class ItemContentOutputText : ItemContent
+public sealed class ItemContentOutputText : ItemContent
 {
     /// <inheritdoc/>
     [JsonIgnore]
@@ -415,7 +415,7 @@ internal sealed class ItemContentOutputText : ItemContent
 /// <summary>
 /// Audio output content.
 /// </summary>
-internal sealed class ItemContentOutputAudio : ItemContent
+public sealed class ItemContentOutputAudio : ItemContent
 {
     /// <inheritdoc/>
     [JsonIgnore]
@@ -437,7 +437,7 @@ internal sealed class ItemContentOutputAudio : ItemContent
 /// <summary>
 /// Refusal content.
 /// </summary>
-internal sealed class ItemContentRefusal : ItemContent
+public sealed class ItemContentRefusal : ItemContent
 {
     /// <inheritdoc/>
     [JsonIgnore]
@@ -455,7 +455,7 @@ internal sealed class ItemContentRefusal : ItemContent
 /// <summary>
 /// A file search tool call item resource.
 /// </summary>
-internal sealed class FileSearchToolCallItemResource : ItemResource
+public sealed class FileSearchToolCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for file search call items.
@@ -487,7 +487,7 @@ internal sealed class FileSearchToolCallItemResource : ItemResource
 /// <summary>
 /// A computer tool call item resource.
 /// </summary>
-internal sealed class ComputerToolCallItemResource : ItemResource
+public sealed class ComputerToolCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for computer call items.
@@ -525,7 +525,7 @@ internal sealed class ComputerToolCallItemResource : ItemResource
 /// <summary>
 /// A computer tool call output item resource.
 /// </summary>
-internal sealed class ComputerToolCallOutputItemResource : ItemResource
+public sealed class ComputerToolCallOutputItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for computer call output items.
@@ -563,7 +563,7 @@ internal sealed class ComputerToolCallOutputItemResource : ItemResource
 /// <summary>
 /// A web search tool call item resource.
 /// </summary>
-internal sealed class WebSearchToolCallItemResource : ItemResource
+public sealed class WebSearchToolCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for web search call items.
@@ -589,7 +589,7 @@ internal sealed class WebSearchToolCallItemResource : ItemResource
 /// <summary>
 /// A reasoning item resource.
 /// </summary>
-internal sealed class ReasoningItemResource : ItemResource
+public sealed class ReasoningItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for reasoning items.
@@ -622,7 +622,7 @@ internal sealed class ReasoningItemResource : ItemResource
 /// <summary>
 /// An item reference item resource.
 /// </summary>
-internal sealed class ItemReferenceItemResource : ItemResource
+public sealed class ItemReferenceItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for item reference items.
@@ -636,7 +636,7 @@ internal sealed class ItemReferenceItemResource : ItemResource
 /// <summary>
 /// An image generation tool call item resource.
 /// </summary>
-internal sealed class ImageGenerationToolCallItemResource : ItemResource
+public sealed class ImageGenerationToolCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for image generation call items.
@@ -662,7 +662,7 @@ internal sealed class ImageGenerationToolCallItemResource : ItemResource
 /// <summary>
 /// A code interpreter tool call item resource.
 /// </summary>
-internal sealed class CodeInterpreterToolCallItemResource : ItemResource
+public sealed class CodeInterpreterToolCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for code interpreter call items.
@@ -701,7 +701,7 @@ internal sealed class CodeInterpreterToolCallItemResource : ItemResource
 /// <summary>
 /// A local shell tool call item resource.
 /// </summary>
-internal sealed class LocalShellToolCallItemResource : ItemResource
+public sealed class LocalShellToolCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for local shell call items.
@@ -733,7 +733,7 @@ internal sealed class LocalShellToolCallItemResource : ItemResource
 /// <summary>
 /// A local shell tool call output item resource.
 /// </summary>
-internal sealed class LocalShellToolCallOutputItemResource : ItemResource
+public sealed class LocalShellToolCallOutputItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for local shell call output items.
@@ -759,7 +759,7 @@ internal sealed class LocalShellToolCallOutputItemResource : ItemResource
 /// <summary>
 /// An MCP list tools item resource.
 /// </summary>
-internal sealed class MCPListToolsItemResource : ItemResource
+public sealed class MCPListToolsItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for MCP list tools items.
@@ -791,7 +791,7 @@ internal sealed class MCPListToolsItemResource : ItemResource
 /// <summary>
 /// An MCP approval request item resource.
 /// </summary>
-internal sealed class MCPApprovalRequestItemResource : ItemResource
+public sealed class MCPApprovalRequestItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for MCP approval request items.
@@ -823,7 +823,7 @@ internal sealed class MCPApprovalRequestItemResource : ItemResource
 /// <summary>
 /// An MCP approval response item resource.
 /// </summary>
-internal sealed class MCPApprovalResponseItemResource : ItemResource
+public sealed class MCPApprovalResponseItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for MCP approval response items.
@@ -855,7 +855,7 @@ internal sealed class MCPApprovalResponseItemResource : ItemResource
 /// <summary>
 /// An MCP call item resource.
 /// </summary>
-internal sealed class MCPCallItemResource : ItemResource
+public sealed class MCPCallItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for MCP call items.
@@ -899,7 +899,7 @@ internal sealed class MCPCallItemResource : ItemResource
 /// <summary>
 /// An executor action item resource for workflow execution visualization.
 /// </summary>
-internal sealed class ExecutorActionItemResource : ItemResource
+public sealed class ExecutorActionItemResource : ItemResource
 {
     /// <summary>
     /// The constant item type identifier for executor action items.

@@ -13,7 +13,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// <summary>
 /// Extension methods for <see cref="SortOrder"/>.
 /// </summary>
-internal static class SortOrderExtensions
+public static class SortOrderExtensions
 {
     /// <summary>
     /// Converts a <see cref="SortOrder"/> to its string representation.

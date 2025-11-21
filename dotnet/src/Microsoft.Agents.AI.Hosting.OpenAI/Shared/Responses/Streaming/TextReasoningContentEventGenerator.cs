@@ -19,7 +19,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Streaming;
 /// A state machine for generating streaming events from reasoning text content.
 /// Processes TextReasoningContent instances one at a time and emits appropriate streaming events based on internal state.
 /// </summary>
-internal sealed class TextReasoningContentEventGenerator(
+public sealed class TextReasoningContentEventGenerator(
         IdGenerator idGenerator,
         SequenceNumber seq,
         int outputIndex) : StreamingEventGenerator
@@ -39,8 +39,10 @@ internal sealed class TextReasoningContentEventGenerator(
         Completed
     }
 
+    /// <inheritdoc />
     public override bool IsSupported(AIContent content) => content is TextReasoningContent;
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> ProcessContent(AIContent content)
     {
         if (this._currentState == State.Completed)
@@ -86,6 +88,7 @@ internal sealed class TextReasoningContentEventGenerator(
         };
     }
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> Complete()
     {
         if (this._currentState == State.Completed)

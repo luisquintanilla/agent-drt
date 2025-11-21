@@ -12,7 +12,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// <summary>
 /// Represents workflow event data for serialization.
 /// </summary>
-internal sealed class WorkflowEventData
+public sealed class WorkflowEventData
 {
     /// <summary>
     /// The type of the workflow event.

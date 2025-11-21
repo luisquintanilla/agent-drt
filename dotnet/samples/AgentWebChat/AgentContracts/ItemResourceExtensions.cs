@@ -4,11 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using AgentGateway;
-using AgentGateway.Responses;
-using AgentGateway.Responses.Converters;
-using AgentGateway.Responses.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Extensions.AI;
 

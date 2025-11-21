@@ -16,7 +16,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Streaming;
 /// <summary>
 /// Abstract base class for generating streaming events from <see cref="AIContent"/> instances
 /// </summary>
-internal abstract class StreamingEventGenerator
+public abstract class StreamingEventGenerator
 {
     /// <summary>
     /// Determines if the provided content is supported by this generator.

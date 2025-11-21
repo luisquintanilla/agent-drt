@@ -34,7 +34,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 [JsonDerivedType(typeof(StreamingWorkflowEventComplete), StreamingWorkflowEventComplete.EventType)]
 [JsonDerivedType(typeof(StreamingFunctionApprovalRequested), StreamingFunctionApprovalRequested.EventType)]
 [JsonDerivedType(typeof(StreamingFunctionApprovalResponded), StreamingFunctionApprovalResponded.EventType)]
-internal abstract class StreamingResponseEvent
+public abstract class StreamingResponseEvent
 {
     /// <summary>
     /// Gets the type identifier for the streaming response event.
@@ -54,7 +54,7 @@ internal abstract class StreamingResponseEvent
 /// <summary>
 /// Denotes an <see cref="StreamingResponseEvent"/> instance which contains an update to the <see cref="Models.Response"/> instance.
 /// </summary>
-internal interface IStreamingResponseEventWithResponse
+public interface IStreamingResponseEventWithResponse
 {
     /// <summary>
     /// Gets the response object associated with this streaming event.
@@ -66,7 +66,7 @@ internal interface IStreamingResponseEventWithResponse
 /// Represents a streaming response event indicating that a new response has been created and streaming has begun.
 /// This is typically the first event sent in a streaming response sequence.
 /// </summary>
-internal sealed class StreamingResponseCreated : StreamingResponseEvent, IStreamingResponseEventWithResponse
+public sealed class StreamingResponseCreated : StreamingResponseEvent, IStreamingResponseEventWithResponse
 {
     /// <summary>
     /// The constant event type identifier for response created events.
@@ -88,7 +88,7 @@ internal sealed class StreamingResponseCreated : StreamingResponseEvent, IStream
 /// <summary>
 /// Represents a streaming response event indicating that the response is in progress.
 /// </summary>
-internal sealed class StreamingResponseInProgress : StreamingResponseEvent, IStreamingResponseEventWithResponse
+public sealed class StreamingResponseInProgress : StreamingResponseEvent, IStreamingResponseEventWithResponse
 {
     /// <summary>
     /// The constant event type identifier for response in progress events.
@@ -110,7 +110,7 @@ internal sealed class StreamingResponseInProgress : StreamingResponseEvent, IStr
 /// Represents a streaming response event indicating that the response has been completed.
 /// This is typically the last event sent in a streaming response sequence.
 /// </summary>
-internal sealed class StreamingResponseCompleted : StreamingResponseEvent, IStreamingResponseEventWithResponse
+public sealed class StreamingResponseCompleted : StreamingResponseEvent, IStreamingResponseEventWithResponse
 {
     /// <summary>
     /// The constant event type identifier for response completed events.
@@ -132,7 +132,7 @@ internal sealed class StreamingResponseCompleted : StreamingResponseEvent, IStre
 /// <summary>
 /// Represents a streaming response event indicating that the response finished as incomplete.
 /// </summary>
-internal sealed class StreamingResponseIncomplete : StreamingResponseEvent, IStreamingResponseEventWithResponse
+public sealed class StreamingResponseIncomplete : StreamingResponseEvent, IStreamingResponseEventWithResponse
 {
     /// <summary>
     /// The constant event type identifier for response incomplete events.
@@ -153,7 +153,7 @@ internal sealed class StreamingResponseIncomplete : StreamingResponseEvent, IStr
 /// <summary>
 /// Represents a streaming response event indicating that the response has failed.
 /// </summary>
-internal sealed class StreamingResponseFailed : StreamingResponseEvent, IStreamingResponseEventWithResponse
+public sealed class StreamingResponseFailed : StreamingResponseEvent, IStreamingResponseEventWithResponse
 {
     /// <summary>
     /// The constant event type identifier for response failed events.
@@ -175,7 +175,7 @@ internal sealed class StreamingResponseFailed : StreamingResponseEvent, IStreami
 /// Represents a streaming response event indicating that the response has been cancelled.
 /// Only responses created with background=true can be cancelled.
 /// </summary>
-internal sealed class StreamingResponseCancelled : StreamingResponseEvent, IStreamingResponseEventWithResponse
+public sealed class StreamingResponseCancelled : StreamingResponseEvent, IStreamingResponseEventWithResponse
 {
     /// <summary>
     /// The constant event type identifier for response cancelled events.
@@ -197,7 +197,7 @@ internal sealed class StreamingResponseCancelled : StreamingResponseEvent, IStre
 /// Represents a streaming response event indicating that a new output item has been added to the response.
 /// This event is sent when the AI agent produces a new piece of content during streaming.
 /// </summary>
-internal sealed class StreamingOutputItemAdded : StreamingResponseEvent
+public sealed class StreamingOutputItemAdded : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for output item added events.
@@ -227,7 +227,7 @@ internal sealed class StreamingOutputItemAdded : StreamingResponseEvent
 /// Represents a streaming response event indicating that an output item has been completed.
 /// This event is sent when the AI agent finishes producing a particular piece of content.
 /// </summary>
-internal sealed class StreamingOutputItemDone : StreamingResponseEvent
+public sealed class StreamingOutputItemDone : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for output item done events.
@@ -256,7 +256,7 @@ internal sealed class StreamingOutputItemDone : StreamingResponseEvent
 /// <summary>
 /// Represents a streaming response event indicating that a new content part has been added to an output item.
 /// </summary>
-internal sealed class StreamingContentPartAdded : StreamingResponseEvent
+public sealed class StreamingContentPartAdded : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for content part added events.
@@ -295,7 +295,7 @@ internal sealed class StreamingContentPartAdded : StreamingResponseEvent
 /// <summary>
 /// Represents a streaming response event indicating that a content part has been completed.
 /// </summary>
-internal sealed class StreamingContentPartDone : StreamingResponseEvent
+public sealed class StreamingContentPartDone : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for content part done events.
@@ -334,7 +334,7 @@ internal sealed class StreamingContentPartDone : StreamingResponseEvent
 /// <summary>
 /// Represents a streaming response event containing a text delta (incremental text chunk).
 /// </summary>
-internal sealed class StreamingOutputTextDelta : StreamingResponseEvent
+public sealed class StreamingOutputTextDelta : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for output text delta events.
@@ -379,7 +379,7 @@ internal sealed class StreamingOutputTextDelta : StreamingResponseEvent
 /// <summary>
 /// Represents a streaming response event indicating that output text has been completed.
 /// </summary>
-internal sealed class StreamingOutputTextDone : StreamingResponseEvent
+public sealed class StreamingOutputTextDone : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for output text done events.
@@ -418,7 +418,7 @@ internal sealed class StreamingOutputTextDone : StreamingResponseEvent
 /// <summary>
 /// Represents a streaming response event containing a function call arguments delta.
 /// </summary>
-internal sealed class StreamingFunctionCallArgumentsDelta : StreamingResponseEvent
+public sealed class StreamingFunctionCallArgumentsDelta : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for function call arguments delta events.
@@ -451,7 +451,7 @@ internal sealed class StreamingFunctionCallArgumentsDelta : StreamingResponseEve
 /// <summary>
 /// Represents a streaming response event indicating that function call arguments are complete.
 /// </summary>
-internal sealed class StreamingFunctionCallArgumentsDone : StreamingResponseEvent
+public sealed class StreamingFunctionCallArgumentsDone : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for function call arguments done events.
@@ -484,7 +484,7 @@ internal sealed class StreamingFunctionCallArgumentsDone : StreamingResponseEven
 /// <summary>
 /// Represents a streaming response event containing a reasoning summary text delta (incremental text chunk).
 /// </summary>
-internal sealed class StreamingReasoningSummaryTextDelta : StreamingResponseEvent
+public sealed class StreamingReasoningSummaryTextDelta : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for reasoning summary text delta events.
@@ -523,7 +523,7 @@ internal sealed class StreamingReasoningSummaryTextDelta : StreamingResponseEven
 /// <summary>
 /// Represents a streaming response event indicating that reasoning summary text has been completed.
 /// </summary>
-internal sealed class StreamingReasoningSummaryTextDone : StreamingResponseEvent
+public sealed class StreamingReasoningSummaryTextDone : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for reasoning summary text done events.
@@ -564,7 +564,7 @@ internal sealed class StreamingReasoningSummaryTextDone : StreamingResponseEvent
 /// This event is sent during workflow execution to provide observability into workflow steps,
 /// executor invocations, errors, and other workflow lifecycle events.
 /// </summary>
-internal sealed class StreamingWorkflowEventComplete : StreamingResponseEvent
+public sealed class StreamingWorkflowEventComplete : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for workflow event events.
@@ -604,7 +604,7 @@ internal sealed class StreamingWorkflowEventComplete : StreamingResponseEvent
 /// Represents a streaming response event indicating a function approval has been requested.
 /// This is a non-standard DevUI extension for human-in-the-loop scenarios.
 /// </summary>
-internal sealed class StreamingFunctionApprovalRequested : StreamingResponseEvent
+public sealed class StreamingFunctionApprovalRequested : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for function approval requested events.
@@ -644,7 +644,7 @@ internal sealed class StreamingFunctionApprovalRequested : StreamingResponseEven
 /// Represents a streaming response event indicating a function approval has been responded to.
 /// This is a non-standard DevUI extension for human-in-the-loop scenarios.
 /// </summary>
-internal sealed class StreamingFunctionApprovalResponded : StreamingResponseEvent
+public sealed class StreamingFunctionApprovalResponded : StreamingResponseEvent
 {
     /// <summary>
     /// The constant event type identifier for function approval responded events.
@@ -683,7 +683,7 @@ internal sealed class StreamingFunctionApprovalResponded : StreamingResponseEven
 /// <summary>
 /// Represents function call information for approval events.
 /// </summary>
-internal sealed class FunctionCallInfo
+public sealed class FunctionCallInfo
 {
     /// <summary>
     /// Gets or sets the function call ID.

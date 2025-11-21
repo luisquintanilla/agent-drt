@@ -17,7 +17,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 /// <summary>
 /// JSON converter for ResponsesMessageItemParam that handles role-based polymorphic deserialization.
 /// </summary>
-internal sealed class ResponsesMessageItemParamConverter : JsonConverter<ResponsesMessageItemParam>
+public sealed class ResponsesMessageItemParamConverter : JsonConverter<ResponsesMessageItemParam>
 {
     /// <inheritdoc/>
     public override ResponsesMessageItemParam? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

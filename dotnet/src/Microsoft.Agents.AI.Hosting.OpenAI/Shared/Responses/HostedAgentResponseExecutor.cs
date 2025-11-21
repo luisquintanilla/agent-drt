@@ -29,7 +29,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// This executor resolves agents from keyed services registered via AddAIAgent().
 /// The model field is reserved for actual model names and is never used for entity/agent identification.
 /// </summary>
-internal sealed class HostedAgentResponseExecutor : IResponseExecutor
+public sealed class HostedAgentResponseExecutor : IResponseExecutor
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<HostedAgentResponseExecutor> _logger;

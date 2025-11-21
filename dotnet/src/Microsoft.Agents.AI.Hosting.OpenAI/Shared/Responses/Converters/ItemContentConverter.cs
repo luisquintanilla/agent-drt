@@ -16,7 +16,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 /// <summary>
 /// Provides bidirectional conversion between <see cref="AIContent"/> and <see cref="ItemContent"/> types.
 /// </summary>
-internal static class ItemContentConverter
+public static class ItemContentConverter
 {
     private static string AudioFormatToMediaType(string? format) =>
         format?.Equals("mp3", StringComparison.OrdinalIgnoreCase) == true ? "audio/mpeg" :

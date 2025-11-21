@@ -18,14 +18,16 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Streaming;
 /// <summary>
 /// A generator for streaming events from function call content.
 /// </summary>
-internal sealed class FunctionCallEventGenerator(
+public sealed class FunctionCallEventGenerator(
         IdGenerator idGenerator,
         SequenceNumber seq,
         int outputIndex,
         JsonSerializerOptions jsonSerializerOptions) : StreamingEventGenerator
 {
+    /// <inheritdoc />
     public override bool IsSupported(AIContent content) => content is FunctionCallContent;
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> ProcessContent(AIContent content)
     {
         if (content is not FunctionCallContent functionCallContent)
@@ -65,5 +67,6 @@ internal sealed class FunctionCallEventGenerator(
         };
     }
 
+    /// <inheritdoc />
     public override IEnumerable<StreamingResponseEvent> Complete() => [];
 }

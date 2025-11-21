@@ -2,9 +2,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using AgentGateway.Conversations.Models;
-using AgentGateway.Models;
-using AgentGateway.Responses.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 
 namespace AgentWebChat.AgentHost.DurableAgents.Utilities;
 

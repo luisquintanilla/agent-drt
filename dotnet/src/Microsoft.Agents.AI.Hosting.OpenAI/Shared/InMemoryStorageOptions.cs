@@ -12,7 +12,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI;
 /// <summary>
 /// Configuration options for in-memory storage implementations.
 /// </summary>
-internal sealed class InMemoryStorageOptions
+public sealed class InMemoryStorageOptions
 {
     /// <summary>
     /// Gets or sets the maximum number of items to store in the cache.

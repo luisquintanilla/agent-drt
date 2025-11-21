@@ -28,7 +28,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// <summary>
 /// Extension methods for <see cref="AgentRunResponseUpdate"/>.
 /// </summary>
-internal static class AgentRunResponseUpdateExtensions
+public static class AgentRunResponseUpdateExtensions
 {
     /// <summary>
     /// Converts a stream of <see cref="AgentRunResponseUpdate"/> to stream of <see cref="StreamingResponseEvent"/>.

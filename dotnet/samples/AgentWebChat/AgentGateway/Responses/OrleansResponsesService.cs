@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using AgentGateway.Models;
-using AgentGateway.Responses.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Orleans;
 
 namespace AgentGateway.Responses;

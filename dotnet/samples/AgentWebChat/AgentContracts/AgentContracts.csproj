@@ -6,7 +6,6 @@
     <Nullable>enable</Nullable>
     <!-- Suppress OPENAI001 diagnostic for experimental APIs used in source-generated serialization -->
     <NoWarn>$(NoWarn);OPENAI001;MEAI001;CA1812</NoWarn>
-    <DefineConstants>$(DefineConstants);AGENTGATEWAY</DefineConstants>
     <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
     <InjectSharedThrow>true</InjectSharedThrow>
   </PropertyGroup>
@@ -23,16 +22,6 @@
     <ProjectReference Include="..\..\..\src\Microsoft.Agents.AI.Hosting.OpenAI\Microsoft.Agents.AI.Hosting.OpenAI.csproj" />
     <ProjectReference Include="..\..\..\src\Microsoft.Agents.AI.Abstractions\Microsoft.Agents.AI.Abstractions.csproj" />
     <ProjectReference Include="..\..\..\src\Microsoft.Agents.AI\Microsoft.Agents.AI.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="..\..\..\src\Microsoft.Agents.AI.Hosting.OpenAI\Shared\**\*.cs" LinkBase="Shared" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <InternalsVisibleTo Include="AgentGateway.UnitTests" />
-    <InternalsVisibleTo Include="AgentGateway" />
-    <InternalsVisibleTo Include="AgentWebChat.AgentHost" />
   </ItemGroup>
 
   <ItemGroup>

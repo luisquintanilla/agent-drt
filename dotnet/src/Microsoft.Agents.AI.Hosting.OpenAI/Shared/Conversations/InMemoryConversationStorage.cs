@@ -25,18 +25,25 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 /// In-memory implementation of conversation storage for testing and development.
 /// This implementation is thread-safe but data is not persisted across application restarts.
 /// </summary>
-internal sealed class InMemoryConversationStorage : IConversationStorage, IDisposable
+public sealed class InMemoryConversationStorage : IConversationStorage, IDisposable
 {
     private const int DefaultListItemLimit = 20;
 
     private readonly MemoryCache _cache;
     private readonly InMemoryStorageOptions _options;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryConversationStorage"/> class with default options.
+    /// </summary>
     public InMemoryConversationStorage()
         : this(new InMemoryStorageOptions())
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryConversationStorage"/> class with the specified options.
+    /// </summary>
+    /// <param name="options">The storage options to use.</param>
     public InMemoryConversationStorage(InMemoryStorageOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -348,6 +355,7 @@ internal sealed class InMemoryConversationStorage : IConversationStorage, IDispo
 #endif
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         this._cache.Dispose();

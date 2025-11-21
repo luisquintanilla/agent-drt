@@ -21,7 +21,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI;
 /// detect that a key doesn't exist and create different instances, with only one being cached.
 /// See: https://github.com/dotnet/runtime/issues/36499
 /// </remarks>
-internal static class MemoryCacheExtensions
+public static class MemoryCacheExtensions
 {
     private static readonly ConcurrentDictionary<(IMemoryCache, object), SemaphoreSlim> s_semaphores = new();
 

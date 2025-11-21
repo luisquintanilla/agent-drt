@@ -15,7 +15,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 /// Represents a reference to a conversation, which can be either a conversation ID (string) or a conversation object.
 /// </summary>
 [JsonConverter(typeof(ConversationReferenceJsonConverter))]
-internal sealed class ConversationReference
+public sealed class ConversationReference
 {
     /// <summary>
     /// The conversation ID.
@@ -44,7 +44,7 @@ internal sealed class ConversationReference
 /// <summary>
 /// JSON converter for ConversationReference that handles both string (conversation ID) and object representations.
 /// </summary>
-internal sealed class ConversationReferenceJsonConverter : JsonConverter<ConversationReference>
+public sealed class ConversationReferenceJsonConverter : JsonConverter<ConversationReference>
 {
     /// <inheritdoc/>
     public override ConversationReference? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

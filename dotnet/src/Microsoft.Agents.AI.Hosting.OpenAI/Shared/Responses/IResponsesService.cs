@@ -20,7 +20,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// Service interface for handling OpenAI Responses API operations.
 /// Implementations can use various storage and execution strategies (in-memory, Orleans grains, etc.).
 /// </summary>
-internal interface IResponsesService
+public interface IResponsesService
 {
     /// <summary>
     /// Default limit for list operations.

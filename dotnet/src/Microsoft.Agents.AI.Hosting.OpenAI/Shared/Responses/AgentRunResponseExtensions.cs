@@ -22,7 +22,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// <summary>
 /// Extension methods for converting agent responses to Response models.
 /// </summary>
-internal static class AgentRunResponseExtensions
+public static class AgentRunResponseExtensions
 {
     private static ChatRole s_DeveloperRole => new("developer");
 

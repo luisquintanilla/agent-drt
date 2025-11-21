@@ -14,7 +14,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Models;
 /// Specifies the sort order for list operations.
 /// </summary>
 [JsonConverter(typeof(SortOrderJsonConverter))]
-internal enum SortOrder
+public enum SortOrder
 {
     /// <summary>
     /// Sort in ascending order (oldest to newest).
@@ -30,7 +30,7 @@ internal enum SortOrder
 /// <summary>
 /// Custom JSON converter for SortOrder enum to serialize as "asc" and "desc".
 /// </summary>
-internal sealed class SortOrderJsonConverter : JsonConverter<SortOrder>
+public sealed class SortOrderJsonConverter : JsonConverter<SortOrder>
 {
     /// <inheritdoc/>
     public override SortOrder Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

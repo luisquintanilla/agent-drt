@@ -22,20 +22,26 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// Response executor that uses an AIAgent to execute responses locally.
 /// This is the default implementation for local execution.
 /// </summary>
-internal sealed class AIAgentResponseExecutor : IResponseExecutor
+public sealed class AIAgentResponseExecutor : IResponseExecutor
 {
     private readonly AIAgent _agent;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AIAgentResponseExecutor"/> class.
+    /// </summary>
+    /// <param name="agent">The AI agent to use for executing responses.</param>
     public AIAgentResponseExecutor(AIAgent agent)
     {
         ArgumentNullException.ThrowIfNull(agent);
         this._agent = agent;
     }
 
+    /// <inheritdoc />
     public ValueTask<ResponseError?> ValidateRequestAsync(
         CreateResponse request,
         CancellationToken cancellationToken = default) => ValueTask.FromResult<ResponseError?>(null);
 
+    /// <inheritdoc />
     public async IAsyncEnumerable<StreamingResponseEvent> ExecuteAsync(
         AgentInvocationContext context,
         CreateResponse request,

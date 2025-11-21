@@ -13,7 +13,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations.Models;
 /// <summary>
 /// Represents a conversation in the system.
 /// </summary>
-internal sealed record Conversation
+public sealed record Conversation
 {
     /// <summary>
     /// The unique identifier for the conversation.

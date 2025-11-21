@@ -19,7 +19,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// In-memory implementation of response storage using MemoryCache.
 /// This implementation is thread-safe but data is not persisted across application restarts.
 /// </summary>
-internal sealed class InMemoryResponseStorage : IResponseStorage, IDisposable
+public sealed class InMemoryResponseStorage : IResponseStorage, IDisposable
 {
     private readonly MemoryCache _cache;
     private readonly InMemoryStorageOptions _options;
@@ -38,18 +38,25 @@ internal sealed class InMemoryResponseStorage : IResponseStorage, IDisposable
         }
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryResponseStorage"/> class with default options.
+    /// </summary>
     public InMemoryResponseStorage()
         : this(new InMemoryStorageOptions())
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryResponseStorage"/> class with the specified options.
+    /// </summary>
+    /// <param name="options">The storage options to use.</param>
     public InMemoryResponseStorage(InMemoryStorageOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         this._options = options;
         this._cache = new MemoryCache(options.ToMemoryCacheOptions());
     }
-
+    /// <inheritdoc />
     public Task<StorageResult<Response>> StoreResponseAsync(
         Response response,
         CancellationToken cancellationToken = default)
@@ -69,7 +76,7 @@ internal sealed class InMemoryResponseStorage : IResponseStorage, IDisposable
             ETag = stored.ETag
         });
     }
-
+    /// <inheritdoc />
     public Task<StorageResult<Response>?> GetResponseAsync(
         string responseId,
         CancellationToken cancellationToken = default)
@@ -85,7 +92,7 @@ internal sealed class InMemoryResponseStorage : IResponseStorage, IDisposable
             ETag = stored.ETag
         });
     }
-
+    /// <inheritdoc />
     public Task<StorageResult<Response>?> UpdateResponseAsync(
         Response response,
         string expectedETag,
@@ -113,6 +120,7 @@ internal sealed class InMemoryResponseStorage : IResponseStorage, IDisposable
         });
     }
 
+    /// <inheritdoc />
     public Task<bool> DeleteResponseAsync(
         string responseId,
         CancellationToken cancellationToken = default)
@@ -121,6 +129,7 @@ internal sealed class InMemoryResponseStorage : IResponseStorage, IDisposable
         return Task.FromResult(true);
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         this._cache.Dispose();

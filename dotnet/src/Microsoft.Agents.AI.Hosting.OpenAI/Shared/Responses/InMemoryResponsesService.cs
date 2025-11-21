@@ -33,7 +33,7 @@ namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 /// This implementation is thread-safe but data is not persisted across application restarts.
 /// Uses IResponseStorage for storing response state and metadata.
 /// </summary>
-internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
+public sealed class InMemoryResponsesService : IResponsesService, IDisposable
 {
     private readonly IResponseExecutor _executor;
     private readonly IResponseStorage _storage;
@@ -143,6 +143,13 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         }
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryResponsesService"/> class.
+    /// </summary>
+    /// <param name="executor">The response executor to use.</param>
+    /// <param name="storage">The response storage to use.</param>
+    /// <param name="options">The service options.</param>
+    /// <param name="logger">The logger instance.</param>
     public InMemoryResponsesService(
         IResponseExecutor executor,
         IResponseStorage storage,
@@ -165,6 +172,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
             period: TimeSpan.FromMinutes(1));
     }
 
+    /// <inheritdoc />
     public async ValueTask<ResponseError?> ValidateRequestAsync(
         CreateResponse request,
         CancellationToken cancellationToken = default)
@@ -182,6 +190,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         return await this._executor.ValidateRequestAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public async Task<Response> CreateResponseAsync(
         CreateResponse request,
         CancellationToken cancellationToken = default)
@@ -214,6 +223,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         return completedResult?.Value ?? throw new InvalidOperationException($"Failed to retrieve response '{responseId}' after completion.");
     }
 
+    /// <inheritdoc />
     public async IAsyncEnumerable<StreamingResponseEvent> CreateResponseStreamingAsync(
         CreateResponse request,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -237,12 +247,14 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         }
     }
 
+    /// <inheritdoc />
     public async Task<Response?> GetResponseAsync(string responseId, CancellationToken cancellationToken = default)
     {
         StorageResult<Response>? result = await this._storage.GetResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
         return result?.Value;
     }
 
+    /// <inheritdoc />
     public async IAsyncEnumerable<StreamingResponseEvent> GetResponseStreamingAsync(
         string responseId,
         int? startingAfter = null,
@@ -260,6 +272,8 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         }
     }
 
+    /// <inheritdoc />
+    /// <inheritdoc />
     public async Task<Response> CancelResponseAsync(string responseId, CancellationToken cancellationToken = default)
     {
         StorageResult<Response>? result = await this._storage.GetResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
@@ -297,6 +311,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         return result?.Value ?? throw new InvalidOperationException($"Failed to retrieve response '{responseId}' after cancellation.");
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteResponseAsync(string responseId, CancellationToken cancellationToken = default)
     {
         bool deleted = await this._storage.DeleteResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
@@ -307,6 +322,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         return deleted;
     }
 
+    /// <inheritdoc />
     public async Task<ListResponse<ItemResource>> ListResponseInputItemsAsync(
         string responseId,
         int? limit = null,
@@ -608,6 +624,7 @@ internal sealed class InMemoryResponsesService : IResponsesService, IDisposable
         }
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (this._disposed)
