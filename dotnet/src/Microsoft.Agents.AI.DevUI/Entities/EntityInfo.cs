@@ -8,7 +8,7 @@ namespace Microsoft.Agents.AI.DevUI.Entities;
 /// <summary>
 /// Information about an environment variable required by an entity.
 /// </summary>
-internal sealed record EnvVarRequirement(
+public sealed record EnvVarRequirement(
     [property: JsonPropertyName("name")]
     string Name,
 
@@ -25,7 +25,7 @@ internal sealed record EnvVarRequirement(
 /// <summary>
 /// Information about an entity (agent or workflow).
 /// </summary>
-internal sealed record EntityInfo(
+public sealed record EntityInfo(
     [property: JsonPropertyName("id")]
     string Id,
 
@@ -52,7 +52,7 @@ internal sealed record EntityInfo(
     public string? Source { get; init; } = "di";
 
     [JsonPropertyName("original_url")]
-    public string? OriginalUrl { get; init; }
+    public Uri? OriginalUrl { get; init; }
 
     // Deployment support
     [JsonPropertyName("deployment_supported")]
@@ -103,7 +103,7 @@ internal sealed record EntityInfo(
 /// <summary>
 /// Response containing a list of discovered entities.
 /// </summary>
-internal sealed record DiscoveryResponse(
+public sealed record DiscoveryResponse(
     [property: JsonPropertyName("entities")]
     List<EntityInfo> Entities
 );

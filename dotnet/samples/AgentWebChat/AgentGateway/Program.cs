@@ -141,7 +141,7 @@ builder.Services.AddHostedService<WorkerHealthCheckService>();
 builder.Services.AddSingleton<WorkerHttpForwarder>();
 
 // Register entity provider for DevUI entities API
-//builder.Services.AddEntityProvider<WorkerRegistryEntityProvider>();
+builder.Services.AddSingleton<IEntityProvider, WorkerRegistryEntityProvider>();
 builder.AddOpenAIChatCompletions();
 builder.AddOpenAIResponses();
 
@@ -152,10 +152,6 @@ app.MapDefaultEndpoints();
 // Enable static files middleware - required for DevUI assets
 // DevUI assets are automatically available at /_content/Microsoft.Agents.AI.DevUI/
 app.UseStaticFiles();
-
-// Map Entities API endpoints (DevUI-compatible)
-// Uses registered IEntityProvider instances from DI (WorkerRegistryEntityProvider)
-app.MapEntities();
 
 // Conditionally map worker management endpoints based on configuration
 var gatewayOptions = app.Services.GetRequiredService<IOptions<AgentGatewayOptions>>().Value;

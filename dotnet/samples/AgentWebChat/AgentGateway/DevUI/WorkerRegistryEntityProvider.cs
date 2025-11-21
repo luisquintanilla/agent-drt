@@ -8,14 +8,15 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AgentContracts;
-using AgentGateway.DevUI.Entities;
+using Microsoft.Agents.AI.DevUI;
+using Microsoft.Agents.AI.DevUI.Entities;
 
 namespace AgentGateway.DevUI;
 
 /// <summary>
 /// Entity provider that discovers entities from remote workers via WorkerRegistry and WorkerDiscoveryCache.
 /// </summary>
-internal sealed class WorkerRegistryEntityProvider
+internal sealed class WorkerRegistryEntityProvider : IEntityProvider
 {
     private readonly WorkerRegistry _registry;
     private readonly WorkerDiscoveryCache _cache;
@@ -54,7 +55,7 @@ internal sealed class WorkerRegistryEntityProvider
         // Convert agents to EntityInfo
         foreach (var (agentId, agentCard) in allAgents)
         {
-            var tools = new List<JsonElement>();
+            var tools = new List<string>();
 
             yield return new EntityInfo(
                 Id: agentId,
@@ -82,8 +83,7 @@ internal sealed class WorkerRegistryEntityProvider
             var supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken).ConfigureAwait(false);
             if (supportedAgents is not null && supportedAgents.TryGetValue(entityId, out var agentCard))
             {
-                var tools = new List<JsonElement>();
-                // AgentDiscoveryCard.Tools property access removed - not available in current schema
+                var tools = new List<string>();
 
                 return new EntityInfo(
                     Id: entityId,

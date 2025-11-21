@@ -7,7 +7,7 @@ namespace Microsoft.Agents.AI.DevUI;
 /// <summary>
 /// Provides extension methods for mapping the server metadata endpoint to an <see cref="IEndpointRouteBuilder"/>.
 /// </summary>
-internal static class MetaApiExtensions
+public static class MetaApiExtensions
 {
     /// <summary>
     /// Maps the HTTP API endpoint for retrieving server metadata.
