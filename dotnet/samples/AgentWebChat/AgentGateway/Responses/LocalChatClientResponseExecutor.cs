@@ -4,9 +4,10 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using AgentContracts;
 using AgentGateway.Conversations;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -108,10 +109,7 @@ internal sealed class LocalChatClientResponseExecutor : IResponseExecutor
                 else
                 {
                     // Use the thread from the previous response directly (orphaned response chain)
-                    foreach (var item in previousItems)
-                    {
-                        messages.Add(item.ToChatMessage());
-                    }
+                    messages.AddRange(ItemResourceChatMessageConverter.ToChatMessages(previousItems));
                     // Track the last message ID from the previous response's output
                     if (previousResponse.Output.Count > 0)
                     {
@@ -139,9 +137,8 @@ internal sealed class LocalChatClientResponseExecutor : IResponseExecutor
         // Use GetAllItemsAsync to stream all items
         await foreach (var itemResource in conversationGrain.GetAllItemsAsync(SortOrder.Ascending))
         {
-            // Convert ItemResource to ChatMessage using extension method
-            var chatMessage = itemResource.ToChatMessage();
-            messages.Add(chatMessage);
+            // Convert ItemResource to ChatMessage using converter
+            messages.AddRange(ItemResourceChatMessageConverter.ToChatMessages([itemResource]));
             lastMessageId = itemResource.Id; // Track the last message ID
         }
 

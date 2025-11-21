@@ -8,7 +8,6 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using AgentContracts;
 using Microsoft.Agents.AI.DevUI.Entities;
 using Microsoft.Extensions.Logging;
 

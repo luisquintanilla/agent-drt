@@ -3,11 +3,13 @@
 using System;
 using System.Net.Http;
 using AgentContracts;
-using Microsoft.Agents.AI.Hosting.OpenAI;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
+using AgentGateway;
 using AgentGateway.Conversations;
 using AgentGateway.DevUI;
 using AgentGateway.Health;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
+using AgentGateway.Responses;
 using AgentGateway.Utilities;
 using Microsoft.Agents.AI.DevUI;
 using Microsoft.AspNetCore.Builder;

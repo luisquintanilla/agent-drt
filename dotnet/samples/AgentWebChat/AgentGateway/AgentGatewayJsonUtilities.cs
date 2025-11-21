@@ -5,7 +5,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AgentGateway.Conversations;
-using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
+using AgentGateway.Responses;
+using Microsoft.Agents.AI.Hosting.OpenAI;
 using Microsoft.Agents.AI.DevUI.Entities;
 
 namespace AgentGateway;

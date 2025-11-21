@@ -47,9 +47,9 @@ public static class MicrosoftAgentAIHostingOpenAIServiceCollectionExtensions
         services.TryAddSingleton<IConversationStorage, InMemoryConversationStorage>();
         services.TryAddSingleton<IAgentConversationIndex, InMemoryAgentConversationIndex>();
         services.TryAddSingleton<InMemoryStorageOptions>();
-        services.TryAddSingleton<IResponseStorage, InMemoryResponseStorage>();
         services.AddOptions<ResponsesServiceOptions>();
         services.TryAddSingleton<IResponsesService, InMemoryResponsesService>();
+        services.TryAddSingleton<IResponseStorage, InMemoryResponseStorage>();
         services.TryAddSingleton<IResponseExecutor, HostedAgentResponseExecutor>();
 
         return services;

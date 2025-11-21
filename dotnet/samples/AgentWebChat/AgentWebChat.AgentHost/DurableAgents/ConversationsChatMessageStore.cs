@@ -1,11 +1,13 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Text.Json;
-using AgentContracts;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using Microsoft.Agents.AI.Hosting.OpenAI;
 
 namespace AgentWebChat.AgentHost.DurableAgents.Utilities;
 
@@ -62,16 +64,8 @@ internal sealed class ConversationsChatMessageStore : ChatMessageStore
                 .ListItemsAsync(this._conversationId, "asc", 100, after, cancellationToken)
                 .ConfigureAwait(false);
 
-            // Convert ItemResources to ChatMessages
-            foreach (ItemResource item in response.Data)
-            {
-                // Only convert message items
-                if (item is ResponsesMessageItemResource)
-                {
-                    ChatMessage message = item.ToChatMessage();
-                    messages.Add(message);
-                }
-            }
+            // Convert ItemResources to ChatMessages using the converter
+            messages.AddRange(ItemResourceChatMessageConverter.ToChatMessages(response.Data, this._jsonOptions));
 
             // Update pagination state
             hasMore = response.HasMore;
@@ -96,15 +90,91 @@ internal sealed class ConversationsChatMessageStore : ChatMessageStore
         // Ensure the conversation exists - create it if it doesn't
         await this.EnsureConversationExistsAsync(cancellationToken).ConfigureAwait(false);
 
-        // Convert ChatMessages to ItemParams for the CreateItemsRequest using the centralized extension method
-        List<ItemParam> itemParams = messageList
-            .SelectMany(m => m.ToItemParams())
-            .ToList();
+        // Convert ChatMessages to ItemParams
+        List<ItemParam> itemParams = messageList.SelectMany(ToItemParams).ToList();
 
         // Add the items to the conversation via the API client
         await this._apiClient
             .AddItemsAsync(this._conversationId, itemParams, cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Converts a ChatMessage to ItemParam objects (input models without IDs).
+    /// This is useful for creating items in the Conversations API.
+    /// Filters out events that don't map well to ItemParams (e.g., messages with no convertible content).
+    /// </summary>
+    /// <param name="message">The chat message to convert.</param>
+    /// <returns>An enumerable of ItemParam objects.</returns>
+    private static IEnumerable<ItemParam> ToItemParams(ChatMessage message)
+    {
+        // Separate function call/result contents from regular message contents
+        foreach (AIContent content in message.Contents)
+        {
+            switch (content)
+            {
+                case FunctionCallContent functionCallContent:
+                    yield return new FunctionToolCallItemParam
+                    {
+                        CallId = functionCallContent.CallId,
+                        Name = functionCallContent.Name,
+                        Arguments = JsonSerializer.Serialize(
+                            functionCallContent.Arguments,
+                            OpenAIHostingJsonUtilities.DefaultOptions.GetTypeInfo(typeof(IDictionary<string, object?>)))
+                    };
+                    break;
+
+                case FunctionResultContent functionResultContent:
+                    string output = functionResultContent.Exception is not null
+                        ? $"{functionResultContent.Exception.GetType().Name}(\"{functionResultContent.Exception.Message}\")"
+                        : $"{functionResultContent.Result?.ToString() ?? "(null)"}";
+                    yield return new FunctionToolCallOutputItemParam
+                    {
+                        CallId = functionResultContent.CallId,
+                        Output = output
+                    };
+                    break;
+            }
+        }
+
+        // Convert regular message contents
+        List<ItemContent> regularContents = [];
+        foreach (AIContent content in message.Contents)
+        {
+            if (content is not FunctionCallContent and not FunctionResultContent &&
+                ItemContentConverter.ToItemContent(content) is { } itemContent)
+            {
+                regularContents.Add(itemContent);
+            }
+        }
+
+        // Only create a message item if we have convertible contents
+        // This filters out messages that contain only non-convertible content (e.g., UsageContent)
+        if (regularContents.Count > 0)
+        {
+            InputMessageContent messageContent = InputMessageContent.FromContents(regularContents);
+
+            if (message.Role == ChatRole.User)
+            {
+                yield return new ResponsesUserMessageItemParam { Content = messageContent };
+            }
+            else if (message.Role == ChatRole.Assistant)
+            {
+                yield return new ResponsesAssistantMessageItemParam { Content = messageContent };
+            }
+            else if (message.Role == ChatRole.System)
+            {
+                yield return new ResponsesSystemMessageItemParam { Content = messageContent };
+            }
+            else if (string.Equals(message.Role.Value, "developer", StringComparison.OrdinalIgnoreCase))
+            {
+                yield return new ResponsesDeveloperMessageItemParam { Content = messageContent };
+            }
+            else
+            {
+                yield return new ResponsesUserMessageItemParam { Content = messageContent };
+            }
+        }
     }
 
     /// <inheritdoc/>

@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Extensions.Logging;
 
@@ -48,8 +49,7 @@ internal sealed class WorkerResponseExecutor : IResponseExecutor
         CreateResponse request,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        // Extract agent name similar to EndpointRouteBuilderExtensions.Responses.cs
-        var agentName = request.Agent?.Name ?? request.Model;
+        var agentName = GetAgentName(request);
         if (string.IsNullOrEmpty(agentName))
         {
             throw new InvalidOperationException("No 'agent.name' or 'model' specified in the request.");
@@ -153,5 +153,23 @@ internal sealed class WorkerResponseExecutor : IResponseExecutor
 
         // No worker found that supports this agent
         return null;
+    }
+
+    /// <summary>
+    /// Extracts the agent name for a request from the agent.name property, falling back to metadata["entity_id"].
+    /// </summary>
+    /// <param name="request">The create response request.</param>
+    /// <returns>The agent name.</returns>
+    private static string? GetAgentName(CreateResponse request)
+    {
+        string? agentName = request.Agent?.Name;
+
+        // Fall back to metadata["entity_id"] if agent.name is not present
+        if (string.IsNullOrEmpty(agentName) && request.Metadata?.TryGetValue("entity_id", out string? entityId) == true)
+        {
+            agentName = entityId;
+        }
+
+        return agentName;
     }
 }
