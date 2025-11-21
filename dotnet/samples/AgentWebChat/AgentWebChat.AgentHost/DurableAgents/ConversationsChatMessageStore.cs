@@ -1,212 +1,246 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
-using System.Text.Json;
 using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations.Models;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
-using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
-using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
-using Microsoft.Agents.AI.Hosting.OpenAI;
 
 namespace AgentWebChat.AgentHost.DurableAgents.Utilities;
 
 /// <summary>
-/// A Conversations API-backed implementation of <see cref="ChatMessageStore"/> for durable message storage.
+/// A Conversations API-backed implementation of <see cref="IConversationStorage"/> for durable conversation storage.
 /// </summary>
 /// <remarks>
-/// This implementation stores chat messages using the OpenAI Conversations API exposed by the AgentGateway.
-/// Each store instance is associated with a specific conversation identified by a unique conversation ID.
-/// Messages are stored as ItemResources in the conversation.
-/// This class handles the conversion between ChatMessage and Conversations API types.
+/// This implementation stores conversations and messages using the OpenAI Conversations API exposed by the AgentGateway.
+/// It delegates all operations to the remote Conversations API via HTTP.
 /// </remarks>
-internal sealed class ConversationsChatMessageStore : ChatMessageStore
+internal sealed class ConversationsChatMessageStore : IConversationStorage
 {
     private readonly ConversationsApiClient _apiClient;
-    private readonly string _conversationId;
-    private readonly JsonSerializerOptions _jsonOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConversationsChatMessageStore"/> class.
     /// </summary>
     /// <param name="apiClient">The Conversations API client.</param>
-    /// <param name="conversationId">The unique conversation ID for this message store.</param>
-    /// <param name="jsonOptions">Optional JSON serialization options.</param>
-    public ConversationsChatMessageStore(
-        ConversationsApiClient apiClient,
-        string conversationId,
-        JsonSerializerOptions? jsonOptions = null)
+    public ConversationsChatMessageStore(ConversationsApiClient apiClient)
     {
         ArgumentNullException.ThrowIfNull(apiClient);
-        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
 
         this._apiClient = apiClient;
-        this._conversationId = conversationId;
-        this._jsonOptions = jsonOptions ?? new JsonSerializerOptions
+    }
+
+    /// <inheritdoc/>
+    public async Task<Conversation> CreateConversationAsync(Conversation conversation, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(conversation);
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversation.Id);
+
+        await this._apiClient.CreateConversationAsync(conversation.Id, cancellationToken).ConfigureAwait(false);
+
+        return conversation;
+    }
+
+    /// <inheritdoc/>
+    public async Task<Conversation?> GetConversationAsync(string conversationId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+
+        bool exists = await this._apiClient.ConversationExistsAsync(conversationId, cancellationToken).ConfigureAwait(false);
+
+        if (!exists)
         {
-            WriteIndented = false,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            return null;
+        }
+
+        // Return a basic conversation object since the API doesn't provide full conversation details
+        return new Conversation
+        {
+            Id = conversationId,
+            CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            Metadata = new Dictionary<string, string>()
         };
     }
 
     /// <inheritdoc/>
-    public override async Task<IEnumerable<ChatMessage>> GetMessagesAsync(CancellationToken cancellationToken = default)
+    public async Task<Conversation?> UpdateConversationAsync(Conversation conversation, CancellationToken cancellationToken = default)
     {
-        List<ChatMessage> messages = [];
-        string? after = null;
-        bool hasMore = true;
+        ArgumentNullException.ThrowIfNull(conversation);
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversation.Id);
 
-        // List all items in the conversation in ascending order (oldest first)
-        // Loop until we've retrieved all pages of messages
-        while (hasMore)
+        bool exists = await this._apiClient.ConversationExistsAsync(conversation.Id, cancellationToken).ConfigureAwait(false);
+
+        if (!exists)
         {
-            ListResponse<ItemResource> response = await this._apiClient
-                .ListItemsAsync(this._conversationId, "asc", 100, after, cancellationToken)
-                .ConfigureAwait(false);
-
-            // Convert ItemResources to ChatMessages using the converter
-            messages.AddRange(ItemResourceChatMessageConverter.ToChatMessages(response.Data, this._jsonOptions));
-
-            // Update pagination state
-            hasMore = response.HasMore;
-            after = response.LastId;
+            return null;
         }
 
-        return messages;
+        // The current API client doesn't support updating conversation metadata
+        // Return the conversation as-is for now
+        return conversation;
     }
 
     /// <inheritdoc/>
-    public override async Task AddMessagesAsync(IEnumerable<ChatMessage> messages, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteConversationAsync(string conversationId, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(messages);
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
 
-        List<ChatMessage> messageList = messages.ToList();
+        bool exists = await this._apiClient.ConversationExistsAsync(conversationId, cancellationToken).ConfigureAwait(false);
 
-        if (messageList.Count == 0)
+        if (!exists)
+        {
+            return false;
+        }
+
+        // The current API client doesn't support deleting conversations
+        // This would need to be added to ConversationsApiClient
+        throw new NotSupportedException("Deleting conversations is not currently supported by the API client.");
+    }
+
+    /// <inheritdoc/>
+    public async Task AddItemsAsync(string conversationId, IEnumerable<ItemResource> items, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+        ArgumentNullException.ThrowIfNull(items);
+
+        List<ItemResource> itemList = items.ToList();
+
+        if (itemList.Count == 0)
         {
             return;
         }
 
-        // Ensure the conversation exists - create it if it doesn't
-        await this.EnsureConversationExistsAsync(cancellationToken).ConfigureAwait(false);
+        // Ensure the conversation exists
+        await this.EnsureConversationExistsAsync(conversationId, cancellationToken).ConfigureAwait(false);
 
-        // Convert ChatMessages to ItemParams
-        List<ItemParam> itemParams = messageList.SelectMany(ToItemParams).ToList();
+        // Convert ItemResources to ItemParams (removing IDs for creation)
+        List<ItemParam> itemParams = itemList.SelectMany(ItemResourceToItemParams).ToList();
 
         // Add the items to the conversation via the API client
         await this._apiClient
-            .AddItemsAsync(this._conversationId, itemParams, cancellationToken)
+            .AddItemsAsync(conversationId, itemParams, cancellationToken)
             .ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Converts a ChatMessage to ItemParam objects (input models without IDs).
-    /// This is useful for creating items in the Conversations API.
-    /// Filters out events that don't map well to ItemParams (e.g., messages with no convertible content).
-    /// </summary>
-    /// <param name="message">The chat message to convert.</param>
-    /// <returns>An enumerable of ItemParam objects.</returns>
-    private static IEnumerable<ItemParam> ToItemParams(ChatMessage message)
+    /// <inheritdoc/>
+    public async Task<ItemResource?> GetItemAsync(string conversationId, string itemId, CancellationToken cancellationToken = default)
     {
-        // Separate function call/result contents from regular message contents
-        foreach (AIContent content in message.Contents)
-        {
-            switch (content)
-            {
-                case FunctionCallContent functionCallContent:
-                    yield return new FunctionToolCallItemParam
-                    {
-                        CallId = functionCallContent.CallId,
-                        Name = functionCallContent.Name,
-                        Arguments = JsonSerializer.Serialize(
-                            functionCallContent.Arguments,
-                            OpenAIHostingJsonUtilities.DefaultOptions.GetTypeInfo(typeof(IDictionary<string, object?>)))
-                    };
-                    break;
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
 
-                case FunctionResultContent functionResultContent:
-                    string output = functionResultContent.Exception is not null
-                        ? $"{functionResultContent.Exception.GetType().Name}(\"{functionResultContent.Exception.Message}\")"
-                        : $"{functionResultContent.Result?.ToString() ?? "(null)"}";
-                    yield return new FunctionToolCallOutputItemParam
-                    {
-                        CallId = functionResultContent.CallId,
-                        Output = output
-                    };
-                    break;
-            }
-        }
+        // The current API doesn't support getting a single item directly
+        // We need to list all items and find the one we want
+        ListResponse<ItemResource> response = await this._apiClient
+            .ListItemsAsync(conversationId, "asc", 100, null, cancellationToken)
+            .ConfigureAwait(false);
 
-        // Convert regular message contents
-        List<ItemContent> regularContents = [];
-        foreach (AIContent content in message.Contents)
-        {
-            if (content is not FunctionCallContent and not FunctionResultContent &&
-                ItemContentConverter.ToItemContent(content) is { } itemContent)
-            {
-                regularContents.Add(itemContent);
-            }
-        }
-
-        // Only create a message item if we have convertible contents
-        // This filters out messages that contain only non-convertible content (e.g., UsageContent)
-        if (regularContents.Count > 0)
-        {
-            InputMessageContent messageContent = InputMessageContent.FromContents(regularContents);
-
-            if (message.Role == ChatRole.User)
-            {
-                yield return new ResponsesUserMessageItemParam { Content = messageContent };
-            }
-            else if (message.Role == ChatRole.Assistant)
-            {
-                yield return new ResponsesAssistantMessageItemParam { Content = messageContent };
-            }
-            else if (message.Role == ChatRole.System)
-            {
-                yield return new ResponsesSystemMessageItemParam { Content = messageContent };
-            }
-            else if (string.Equals(message.Role.Value, "developer", StringComparison.OrdinalIgnoreCase))
-            {
-                yield return new ResponsesDeveloperMessageItemParam { Content = messageContent };
-            }
-            else
-            {
-                yield return new ResponsesUserMessageItemParam { Content = messageContent };
-            }
-        }
+        return response.Data.FirstOrDefault(item => item.Id == itemId);
     }
 
     /// <inheritdoc/>
-    public override JsonElement Serialize(JsonSerializerOptions? jsonSerializerOptions = null)
+    public async Task<ListResponse<ItemResource>> ListItemsAsync(
+        string conversationId,
+        int? limit = null,
+        SortOrder? order = null,
+        string? after = null,
+        CancellationToken cancellationToken = default)
     {
-        StoreState state = new()
-        {
-            ConversationId = this._conversationId
-        };
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
 
-        return JsonSerializer.SerializeToElement(state, jsonSerializerOptions ?? this._jsonOptions);
+        int effectiveLimit = limit ?? 20;
+        string orderStr = order == SortOrder.Ascending ? "asc" : "desc";
+
+        return await this._apiClient
+            .ListItemsAsync(conversationId, orderStr, effectiveLimit, after, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <inheritdoc/>
+    public Task<bool> DeleteItemAsync(string conversationId, string itemId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
+
+        // The current API client doesn't support deleting individual items
+        throw new NotSupportedException("Deleting individual items is not currently supported by the API client.");
+    }
+
+    /// <summary>
+    /// Converts an ItemResource to ItemParam objects.
+    /// </summary>
+    /// <param name="item">The item resource to convert.</param>
+    /// <returns>An enumerable of ItemParam objects.</returns>
+    private static IEnumerable<ItemParam> ItemResourceToItemParams(ItemResource item)
+    {
+        // Convert based on item type
+        switch (item)
+        {
+            case ResponsesUserMessageItemResource userMessage:
+                yield return new ResponsesUserMessageItemParam
+                {
+                    Content = userMessage.Content
+                };
+                break;
+
+            case ResponsesAssistantMessageItemResource assistantMessage:
+                yield return new ResponsesAssistantMessageItemParam
+                {
+                    Content = assistantMessage.Content
+                };
+                break;
+
+            case ResponsesSystemMessageItemResource systemMessage:
+                yield return new ResponsesSystemMessageItemParam
+                {
+                    Content = systemMessage.Content
+                };
+                break;
+
+            case ResponsesDeveloperMessageItemResource developerMessage:
+                yield return new ResponsesDeveloperMessageItemParam
+                {
+                    Content = developerMessage.Content
+                };
+                break;
+
+            case FunctionToolCallItemResource functionCall:
+                yield return new FunctionToolCallItemParam
+                {
+                    CallId = functionCall.CallId,
+                    Name = functionCall.Name,
+                    Arguments = functionCall.Arguments
+                };
+                break;
+
+            case FunctionToolCallOutputItemResource functionOutput:
+                yield return new FunctionToolCallOutputItemParam
+                {
+                    CallId = functionOutput.CallId,
+                    Output = functionOutput.Output
+                };
+                break;
+
+            default:
+                // Skip unknown item types
+                break;
+        }
     }
 
     /// <summary>
     /// Ensures the conversation exists, creating it if necessary.
     /// </summary>
-    private async Task EnsureConversationExistsAsync(CancellationToken cancellationToken)
+    /// <param name="conversationId">The conversation ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task EnsureConversationExistsAsync(string conversationId, CancellationToken cancellationToken)
     {
         bool exists = await this._apiClient
-            .ConversationExistsAsync(this._conversationId, cancellationToken)
+            .ConversationExistsAsync(conversationId, cancellationToken)
             .ConfigureAwait(false);
 
         if (!exists)
         {
             await this._apiClient
-                .CreateConversationAsync(this._conversationId, cancellationToken)
+                .CreateConversationAsync(conversationId, cancellationToken)
                 .ConfigureAwait(false);
         }
-    }
-
-    internal sealed class StoreState
-    {
-        public string ConversationId { get; set; } = string.Empty;
     }
 }

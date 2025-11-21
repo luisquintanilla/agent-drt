@@ -1,52 +1,41 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using AgentWebChat.AgentHost.DurableAgents.Utilities;
-using Microsoft.Agents.AI;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
-/// Extension methods for registering Conversations API-backed chat message storage.
+/// Extension methods for registering Conversations API-backed conversation storage.
 /// </summary>
 public static class ConversationsChatMessageStoreExtensions
 {
     /// <summary>
-    /// Registers a factory for creating Conversations API-backed chat message stores.
+    /// Registers the Conversations API-backed conversation storage implementation.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <remarks>
     /// <para>
-    /// This extension method registers a factory function that creates <see cref="ConversationsChatMessageStore"/>
-    /// instances for storing chat messages using the OpenAI Conversations API exposed by the AgentGateway.
+    /// This extension method registers <see cref="ConversationsChatMessageStore"/> as the implementation
+    /// of <see cref="IConversationStorage"/>. This enables conversation and message storage using the
+    /// OpenAI Conversations API exposed by the AgentGateway.
     /// </para>
     /// <para>
-    /// The factory creates an HttpClient configured to call the Conversations API endpoints and returns
-    /// a store instance for the specified conversation ID.
+    /// Requires that <see cref="ConversationsApiClient"/> is already registered in the service collection,
+    /// typically via AddHttpClient.
     /// </para>
     /// <para>
     /// Example usage:
     /// <code>
+    /// builder.Services.AddHttpClient&lt;ConversationsApiClient&gt;(client => client.BaseAddress = new Uri(gatewayAddress));
     /// builder.Services.AddConversationsChatMessageStore();
-    ///
-    /// // Later, inject the factory:
-    /// public MyAgent(Func&lt;string, ChatMessageStore&gt; messageStoreFactory)
-    /// {
-    ///     var store = messageStoreFactory("my-conversation-id");
-    ///     // Use the store...
-    /// }
     /// </code>
     /// </para>
     /// </remarks>
     public static IServiceCollection AddConversationsChatMessageStore(this IServiceCollection services)
     {
-        services.AddSingleton<Func<string, ChatMessageStore>>(sp =>
-        {
-            var apiClient = sp.GetRequiredService<ConversationsApiClient>();
-            ChatMessageStore ChatMessageStoreFactory(string conversationId) => new ConversationsChatMessageStore(apiClient, conversationId);
-            return ChatMessageStoreFactory;
-        });
-
+        services.AddSingleton<IConversationStorage, ConversationsChatMessageStore>();
         return services;
     }
 }
