@@ -177,9 +177,6 @@ app.MapOpenAIConversations();
 
 app.MapOpenAIChatCompletions(pirateAgentBuilder);
 
-// Map the agents HTTP endpoints
-app.MapAgentDiscovery("/agents");
-
 // Worker meta endpoint used by gateway to uniquely identify this process
 app.MapGet("/worker/meta", (WorkerProcessMetadata meta) => Results.Ok(meta));
 

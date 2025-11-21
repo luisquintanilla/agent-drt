@@ -36,39 +36,25 @@ internal sealed class WorkerRegistryEntityProvider : IEntityProvider
     public async IAsyncEnumerable<EntityInfo> GetEntitiesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         // Discover agents from all workers
-        var allAgents = new Dictionary<string, AgentDiscoveryCard>(StringComparer.OrdinalIgnoreCase);
+        var allAgents = new Dictionary<string, EntityInfo>(StringComparer.OrdinalIgnoreCase);
         foreach (var worker in this._registry.ActiveWorkers.Where(w => w.DiscoveryPath is not null))
         {
-            IReadOnlyDictionary<string, AgentDiscoveryCard>? supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken).ConfigureAwait(false);
+            IReadOnlyDictionary<string, EntityInfo>? supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken).ConfigureAwait(false);
             if (supportedAgents is not null)
             {
-                foreach (var (agentName, agentCard) in supportedAgents)
+                foreach (var (agentName, agentInfo) in supportedAgents)
                 {
                     if (!allAgents.ContainsKey(agentName))
                     {
-                        allAgents[agentName] = agentCard;
+                        allAgents[agentName] = agentInfo;
                     }
                 }
             }
         }
 
-        // Convert agents to EntityInfo
-        foreach (var (agentId, agentCard) in allAgents)
+        foreach (var agentInfo in allAgents.Values)
         {
-            var tools = new List<string>();
-
-            yield return new EntityInfo(
-                Id: agentId,
-                Type: "agent",
-                Name: agentCard.Name ?? agentId,
-                Description: agentCard.Description,
-                Framework: "agent-framework",
-                Tools: tools,
-                Metadata: []
-            )
-            {
-                Source = "directory"
-            };
+            yield return agentInfo;
         }
 
         // TODO: Add workflow discovery when workflow support is implemented
@@ -81,22 +67,9 @@ internal sealed class WorkerRegistryEntityProvider : IEntityProvider
         foreach (var worker in this._registry.ActiveWorkers.Where(w => w.DiscoveryPath is not null))
         {
             var supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken).ConfigureAwait(false);
-            if (supportedAgents is not null && supportedAgents.TryGetValue(entityId, out var agentCard))
+            if (supportedAgents is not null && supportedAgents.TryGetValue(entityId, out var agentInfo))
             {
-                var tools = new List<string>();
-
-                return new EntityInfo(
-                    Id: entityId,
-                    Type: "agent",
-                    Name: agentCard.Name ?? entityId,
-                    Description: agentCard.Description,
-                    Framework: "agent-framework",
-                    Tools: tools,
-                    Metadata: []
-                )
-                {
-                    Source = "directory"
-                };
+                return agentInfo;
             }
         }
 

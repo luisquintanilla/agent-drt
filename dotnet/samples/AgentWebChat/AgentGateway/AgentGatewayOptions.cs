@@ -56,5 +56,5 @@ public sealed class WorkerOptions
     /// Gets or sets the relative path to the discovery endpoint.
     /// Default is "/agents".
     /// </summary>
-    public string DiscoveryPath { get; set; } = "/agents";
+    public string DiscoveryPath { get; set; } = "/v1/entities";
 }

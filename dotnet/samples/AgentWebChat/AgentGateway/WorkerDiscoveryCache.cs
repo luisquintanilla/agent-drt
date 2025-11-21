@@ -9,6 +9,7 @@ using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AgentContracts;
+using Microsoft.Agents.AI.DevUI.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace AgentGateway;
@@ -57,7 +58,7 @@ internal sealed partial class WorkerDiscoveryCache
     /// <summary>
     /// Stores a successful discovery result in the cache.
     /// </summary>
-    public void Set(string workerId, IReadOnlyDictionary<string, AgentDiscoveryCard> supportedAgents)
+    public void Set(string workerId, IReadOnlyDictionary<string, EntityInfo> supportedAgents)
     {
         this._cache[workerId] = new CachedDiscoveryResult(
             workerId,
@@ -104,7 +105,7 @@ internal sealed partial class WorkerDiscoveryCache
     /// Discovers which agents a worker supports, using the cache if available.
     /// Returns a dictionary of supported agents keyed by agent name, or null if discovery fails.
     /// </summary>
-    public async ValueTask<IReadOnlyDictionary<string, AgentDiscoveryCard>?> DiscoverAgentsAsync(WorkerRegistry.WorkerInfo worker, CancellationToken cancellationToken = default)
+    public async ValueTask<IReadOnlyDictionary<string, EntityInfo>?> DiscoverAgentsAsync(WorkerRegistry.WorkerInfo worker, CancellationToken cancellationToken = default)
     {
         // Check cache first
         var cached = this.TryGet(worker.Id);
@@ -117,19 +118,27 @@ internal sealed partial class WorkerDiscoveryCache
         try
         {
             var discoveryUri = worker.DiscoveryUri;
-            var agents = await this._httpClient.GetFromJsonAsync(
+            var discoveryResponse = await this._httpClient.GetFromJsonAsync(
                 discoveryUri,
-                AgentContractsJsonContext.Default.ListAgentDiscoveryCard,
+                AgentGatewayJsonContext.Default.DiscoveryResponse,
                 cancellationToken);
 
-            if (agents is not null)
+            if (discoveryResponse?.Entities is { Count: > 0 } agents)
             {
                 // Cache the successful discovery result as a dictionary
                 var agentDict = agents
-                    .Where(a => !string.IsNullOrEmpty(a.Name))
-                    .ToDictionary(a => a.Name, a => a, StringComparer.OrdinalIgnoreCase);
+                    .Where(agent => !string.IsNullOrEmpty(agent.Name))
+                    .ToDictionary(agent => agent.Name, agent => agent, StringComparer.OrdinalIgnoreCase);
                 this.Set(worker.Id, agentDict);
                 return agentDict;
+            }
+
+            if (discoveryResponse is not null)
+            {
+                // Cache an empty dictionary to avoid repeated calls when worker reports no entities
+                var emptyAgents = new Dictionary<string, EntityInfo>(StringComparer.OrdinalIgnoreCase);
+                this.Set(worker.Id, emptyAgents);
+                return emptyAgents;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -146,6 +155,6 @@ internal sealed partial class WorkerDiscoveryCache
 
     public sealed record CachedDiscoveryResult(
         string WorkerId,
-        IReadOnlyDictionary<string, AgentDiscoveryCard> SupportedAgents,
+        IReadOnlyDictionary<string, EntityInfo> SupportedAgents,
         DateTimeOffset Timestamp);
 }

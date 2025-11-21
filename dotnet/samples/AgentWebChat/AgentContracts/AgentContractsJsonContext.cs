@@ -20,7 +20,5 @@ namespace AgentContracts;
 [JsonSerializable(typeof(WorkerRegistrationRequest))]
 [JsonSerializable(typeof(WorkerRegistrationResponse))]
 [JsonSerializable(typeof(WorkerProcessMetadata))]
-[JsonSerializable(typeof(AgentDiscoveryCard))]
-[JsonSerializable(typeof(List<AgentDiscoveryCard>))]
 [ExcludeFromCodeCoverage]
 public sealed partial class AgentContractsJsonContext : JsonSerializerContext;

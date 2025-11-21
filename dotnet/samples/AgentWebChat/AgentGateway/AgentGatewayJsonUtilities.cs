@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AgentGateway.Conversations;
 using AgentGateway.Responses;
+using Microsoft.Agents.AI.DevUI.Entities;
 
 namespace AgentGateway;
 
@@ -52,5 +53,7 @@ public static class AgentGatewayJsonUtilities
 [JsonSerializable(typeof(ConversationState))]
 [JsonSerializable(typeof(ResponseState))]
 [JsonSerializable(typeof(AgentConversationIndexState))]
+[JsonSerializable(typeof(DiscoveryResponse))]
+[JsonSerializable(typeof(List<EntityInfo>))]
 [ExcludeFromCodeCoverage]
 internal sealed partial class AgentGatewayJsonContext : JsonSerializerContext;

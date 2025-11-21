@@ -25,5 +25,5 @@ public sealed class WorkerRegistrationRequest
     public string HealthPath { get; init; } = "/health";
 
     [JsonPropertyName("discoveryPath")]
-    public string DiscoveryPath { get; init; } = "/discovery";
+    public string DiscoveryPath { get; init; } = "/v1/entities";
 }

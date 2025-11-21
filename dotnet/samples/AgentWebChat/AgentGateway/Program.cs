@@ -160,8 +160,6 @@ if (gatewayOptions.EnableRuntimeRegistration)
     app.MapWorkerManagement();
 }
 
-app.MapDiscovery();
-
 // Map forwarding endpoints to workers (eg, A2A) via IHttpForwarder
 app.MapA2AForwarder();
 

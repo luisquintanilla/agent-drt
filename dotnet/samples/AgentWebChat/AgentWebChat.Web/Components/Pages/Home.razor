@@ -11,6 +11,7 @@
 @using System.Text.Json
 @using Microsoft.Extensions.AI
 @using Microsoft.Agents.AI.Hosting
+@using Microsoft.Agents.AI.DevUI.Entities
 @using A2A
 
 <PageTitle>Agent Web Chat</PageTitle>
@@ -892,7 +893,7 @@
 	private bool isLoadingAgents = true;
 	private string currentStreamedMessage = "";
 	private string selectedAgentName = "";
-	private List<AgentContracts.AgentDiscoveryCard> availableAgents = new();
+	private List<EntityInfo> availableAgents = new();
 	private List<Conversation> conversations = new();
 	private Conversation? currentConversation;
 
