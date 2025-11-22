@@ -99,7 +99,7 @@ public sealed class HostedAgentResponseExecutor : IResponseExecutor
             Features = features,
         };
 
-        if (!string.IsNullOrEmpty(context.ConversationId))
+        if (!string.IsNullOrEmpty(request.Conversation?.Id))
         {
             var conversationStorage = this._serviceProvider.GetService<IConversationStorage>();
             if (conversationStorage is not null)

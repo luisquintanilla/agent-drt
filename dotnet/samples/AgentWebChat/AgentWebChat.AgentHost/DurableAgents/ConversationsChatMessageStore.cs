@@ -33,11 +33,13 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
     public async Task<Conversation> CreateConversationAsync(Conversation conversation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(conversation);
-        ArgumentException.ThrowIfNullOrWhiteSpace(conversation.Id);
 
-        await this._apiClient.CreateConversationAsync(conversation.Id, cancellationToken).ConfigureAwait(false);
+        var request = new CreateConversationRequest
+        {
+            Metadata = conversation.Metadata ?? []
+        };
 
-        return conversation;
+        return await this._apiClient.CreateConversationAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -45,20 +47,7 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
 
-        bool exists = await this._apiClient.ConversationExistsAsync(conversationId, cancellationToken).ConfigureAwait(false);
-
-        if (!exists)
-        {
-            return null;
-        }
-
-        // Return a basic conversation object since the API doesn't provide full conversation details
-        return new Conversation
-        {
-            Id = conversationId,
-            CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            Metadata = new Dictionary<string, string>()
-        };
+        return await this._apiClient.GetConversationAsync(conversationId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -67,16 +56,12 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
         ArgumentNullException.ThrowIfNull(conversation);
         ArgumentException.ThrowIfNullOrWhiteSpace(conversation.Id);
 
-        bool exists = await this._apiClient.ConversationExistsAsync(conversation.Id, cancellationToken).ConfigureAwait(false);
-
-        if (!exists)
+        var request = new UpdateConversationRequest
         {
-            return null;
-        }
+            Metadata = conversation.Metadata
+        };
 
-        // The current API client doesn't support updating conversation metadata
-        // Return the conversation as-is for now
-        return conversation;
+        return await this._apiClient.UpdateConversationAsync(conversation.Id, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -84,16 +69,7 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
 
-        bool exists = await this._apiClient.ConversationExistsAsync(conversationId, cancellationToken).ConfigureAwait(false);
-
-        if (!exists)
-        {
-            return false;
-        }
-
-        // The current API client doesn't support deleting conversations
-        // This would need to be added to ConversationsApiClient
-        throw new NotSupportedException("Deleting conversations is not currently supported by the API client.");
+        return await this._apiClient.DeleteConversationAsync(conversationId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -108,9 +84,6 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
         {
             return;
         }
-
-        // Ensure the conversation exists
-        await this.EnsureConversationExistsAsync(conversationId, cancellationToken).ConfigureAwait(false);
 
         // Convert ItemResources to ItemParams (removing IDs for creation)
         List<ItemParam> itemParams = itemList.SelectMany(ItemResourceToItemParams).ToList();
@@ -127,13 +100,7 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
         ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
 
-        // The current API doesn't support getting a single item directly
-        // We need to list all items and find the one we want
-        ListResponse<ItemResource> response = await this._apiClient
-            .ListItemsAsync(conversationId, "asc", 100, null, cancellationToken)
-            .ConfigureAwait(false);
-
-        return response.Data.FirstOrDefault(item => item.Id == itemId);
+        return await this._apiClient.GetItemAsync(conversationId, itemId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -155,13 +122,12 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
     }
 
     /// <inheritdoc/>
-    public Task<bool> DeleteItemAsync(string conversationId, string itemId, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteItemAsync(string conversationId, string itemId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
 
-        // The current API client doesn't support deleting individual items
-        throw new NotSupportedException("Deleting individual items is not currently supported by the API client.");
+        return await this._apiClient.DeleteItemAsync(conversationId, itemId, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -222,25 +188,6 @@ internal sealed class ConversationsChatMessageStore : IConversationStorage
             default:
                 // Skip unknown item types
                 break;
-        }
-    }
-
-    /// <summary>
-    /// Ensures the conversation exists, creating it if necessary.
-    /// </summary>
-    /// <param name="conversationId">The conversation ID.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task EnsureConversationExistsAsync(string conversationId, CancellationToken cancellationToken)
-    {
-        bool exists = await this._apiClient
-            .ConversationExistsAsync(conversationId, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (!exists)
-        {
-            await this._apiClient
-                .CreateConversationAsync(conversationId, cancellationToken)
-                .ConfigureAwait(false);
         }
     }
 }

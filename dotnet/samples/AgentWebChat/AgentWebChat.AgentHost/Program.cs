@@ -46,7 +46,7 @@ var conversationsBaseAddress = /*"http://localhost:5390"*/builder.Configuration[
 if (!string.IsNullOrWhiteSpace(conversationsBaseAddress))
 {
     builder.Services.AddHttpClient<ConversationsApiClient>(client => client.BaseAddress = new Uri(conversationsBaseAddress));
-    builder.Services.AddConversationsChatMessageStore();
+    builder.Services.AddConversationStorageClient();
 }
 
 // Add services to the container.

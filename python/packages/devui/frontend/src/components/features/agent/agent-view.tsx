@@ -67,8 +67,8 @@ function ConversationItemBubble({ item }: ConversationItemBubbleProps) {
   const getMessageText = () => {
     if (item.type === "message") {
       return item.content
-        .filter((c) => c.type === "text")
-        .map((c) => (c as import("@/types/openai").MessageTextContent).text)
+        .filter((c) => c.type === "text" || c.type === "input_text" || c.type === "output_text")
+        .map((c) => (c as any).text)
         .join("\n");
     }
     return "";
@@ -362,9 +362,9 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                     ...item,
                     content: [
                       {
-                        type: "text",
+                        type: "output_text",
                         text: accumulatedTextRef.current || errorMessage,
-                      } as import("@/types/openai").MessageTextContent,
+                      } as import("@/types/openai").MessageOutputTextContent,
                     ],
                     status: "incomplete" as const,
                   }
@@ -408,9 +408,9 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                     ...item,
                     content: [
                       {
-                        type: "text",
+                        type: "output_text",
                         text: accumulatedTextRef.current || errorMessage,
-                      } as import("@/types/openai").MessageTextContent,
+                      } as import("@/types/openai").MessageOutputTextContent,
                     ],
                     status: "incomplete" as const,
                   }
@@ -435,9 +435,9 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                     ...item,
                     content: [
                       {
-                        type: "text",
+                        type: "output_text",
                         text: accumulatedTextRef.current,
-                      } as import("@/types/openai").MessageTextContent,
+                      } as import("@/types/openai").MessageOutputTextContent,
                     ],
                     status: "in_progress" as const,
                   }
@@ -474,11 +474,11 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                 ...item,
                 content: [
                   {
-                    type: "text",
+                    type: "output_text",
                     text: `Error resuming stream: ${
                       error instanceof Error ? error.message : "Unknown error"
                     }`,
-                  } as import("@/types/openai").MessageTextContent,
+                  } as import("@/types/openai").MessageOutputTextContent,
                 ],
                 status: "incomplete" as const,
               }
@@ -544,7 +544,7 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                   id: state.lastMessageId || `assistant-${Date.now()}`,
                   type: "message",
                   role: "assistant",
-                  content: state.accumulatedText ? [{ type: "text", text: state.accumulatedText }] : [],
+                  content: state.accumulatedText ? [{ type: "output_text", text: state.accumulatedText }] : [],
                   status: "in_progress",
                 };
                 setChatItems([...allItems as import("@/types/openai").ConversationItem[], assistantMsg]);
@@ -1148,7 +1148,7 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
           for (const contentItem of inputItem.content) {
             if (contentItem.type === "input_text") {
               messageContent.push({
-                type: "text",
+                type: "input_text",
                 text: contentItem.text,
               });
             } else if (contentItem.type === "input_image") {
@@ -1288,9 +1288,9 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                     ...item,
                     content: [
                       {
-                        type: "text",
+                        type: "output_text",
                         text: accumulatedTextRef.current || errorMessage,
-                      } as import("@/types/openai").MessageTextContent,
+                      } as import("@/types/openai").MessageOutputTextContent,
                     ],
                     status: "incomplete" as const,
                   }
@@ -1370,9 +1370,9 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                     ...item,
                     content: [
                       {
-                        type: "text",
+                        type: "output_text",
                         text: errorMessage,
-                      } as import("@/types/openai").MessageTextContent,
+                      } as import("@/types/openai").MessageOutputTextContent,
                     ],
                     status: "incomplete" as const,
                   }
@@ -1447,15 +1447,15 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
             setChatItems(currentItems.map((item) => {
               if (item.id === assistantMessage.id && item.type === "message") {
                 // Keep existing non-text content, update text content
-                const existingNonTextContent = item.content.filter(c => c.type !== "text");
+                const existingNonTextContent = item.content.filter(c => c.type !== "text" && c.type !== "output_text");
                 return {
                   ...item,
                   content: [
                     ...existingNonTextContent,
                     {
-                      type: "text",
+                      type: "output_text",
                       text: accumulatedTextRef.current,
-                    } as import("@/types/openai").MessageTextContent,
+                    } as import("@/types/openai").MessageOutputTextContent,
                   ],
                   status: "in_progress" as const,
                 };
@@ -1499,13 +1499,13 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
                 ...item,
                 content: [
                   {
-                    type: "text",
+                    type: "output_text",
                     text: `Error: ${
                       error instanceof Error
                         ? error.message
                         : "Failed to get response"
                     }`,
-                  } as import("@/types/openai").MessageTextContent,
+                  } as import("@/types/openai").MessageOutputTextContent,
                 ],
                 status: "incomplete" as const,
               }

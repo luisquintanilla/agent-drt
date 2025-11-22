@@ -41,20 +41,121 @@ internal sealed class ConversationsApiClient
     }
 
     /// <summary>
-    /// Checks if a conversation exists.
+    /// Retrieves a conversation by ID.
     /// </summary>
     /// <param name="conversationId">The unique conversation ID.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>True if the conversation exists; otherwise, false.</returns>
-    public async Task<bool> ConversationExistsAsync(string conversationId, CancellationToken cancellationToken = default)
+    /// <returns>The conversation if found; otherwise, null.</returns>
+    public async Task<Conversation?> GetConversationAsync(string conversationId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
 
         try
         {
-            Uri requestUri = new($"/v1/conversations/{conversationId}", UriKind.Relative);
+            Uri requestUri = new($"/v1/conversations/{Uri.EscapeDataString(conversationId)}", UriKind.Relative);
 
             HttpResponseMessage response = await this._httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<Conversation>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new InvalidOperationException($"Failed to get conversation '{conversationId}'.", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Failed to deserialize conversation '{conversationId}'.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Creates a new conversation.
+    /// </summary>
+    /// <param name="request">The creation request details.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The created conversation.</returns>
+    public async Task<Conversation> CreateConversationAsync(CreateConversationRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        try
+        {
+            HttpResponseMessage response = await this._httpClient.PostAsJsonAsync(
+                "/v1/conversations",
+                request,
+                this._jsonOptions,
+                cancellationToken).ConfigureAwait(false);
+
+            response.EnsureSuccessStatusCode();
+
+            var conversation = await response.Content.ReadFromJsonAsync<Conversation>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
+            return conversation ?? throw new InvalidOperationException("Failed to deserialize created conversation.");
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new InvalidOperationException("Failed to create conversation.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Updates a conversation.
+    /// </summary>
+    /// <param name="conversationId">The unique conversation ID.</param>
+    /// <param name="request">The update request details.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The updated conversation if found; otherwise, null.</returns>
+    public async Task<Conversation?> UpdateConversationAsync(string conversationId, UpdateConversationRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+        ArgumentNullException.ThrowIfNull(request);
+
+        try
+        {
+            Uri requestUri = new($"/v1/conversations/{Uri.EscapeDataString(conversationId)}", UriKind.Relative);
+
+            HttpResponseMessage response = await this._httpClient.PostAsJsonAsync(
+                requestUri,
+                request,
+                this._jsonOptions,
+                cancellationToken).ConfigureAwait(false);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<Conversation>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new InvalidOperationException($"Failed to update conversation '{conversationId}'.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Deletes a conversation.
+    /// </summary>
+    /// <param name="conversationId">The unique conversation ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>True if the conversation was deleted; otherwise, false.</returns>
+    public async Task<bool> DeleteConversationAsync(string conversationId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+
+        try
+        {
+            Uri requestUri = new($"/v1/conversations/{Uri.EscapeDataString(conversationId)}", UriKind.Relative);
+
+            HttpResponseMessage response = await this._httpClient.DeleteAsync(requestUri, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -67,47 +168,7 @@ internal sealed class ConversationsApiClient
         }
         catch (HttpRequestException ex)
         {
-            throw new InvalidOperationException($"Failed to check if conversation '{conversationId}' exists.", ex);
-        }
-    }
-
-    /// <summary>
-    /// Creates a new conversation.
-    /// </summary>
-    /// <param name="conversationId">The unique conversation ID to use as metadata.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    /// <remarks>
-    /// This method creates a conversation with metadata including the provided conversation ID.
-    /// Note: The standard OpenAI Conversations API generates server-side IDs. For client-specified IDs,
-    /// the AgentGateway Conversations API should be enhanced to support this feature.
-    /// </remarks>
-    public async Task CreateConversationAsync(string conversationId, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
-
-        try
-        {
-            CreateConversationRequest createRequest = new()
-            {
-                Metadata = new Dictionary<string, string>
-                {
-                    ["thread_id"] = conversationId,
-                    ["created_by"] = "ConversationsChatMessageStore"
-                }
-            };
-
-            HttpResponseMessage response = await this._httpClient.PostAsJsonAsync(
-                "/v1/conversations",
-                createRequest,
-                this._jsonOptions,
-                cancellationToken).ConfigureAwait(false);
-
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new InvalidOperationException($"Failed to create conversation '{conversationId}'.", ex);
+            throw new InvalidOperationException($"Failed to delete conversation '{conversationId}'.", ex);
         }
     }
 
@@ -132,7 +193,7 @@ internal sealed class ConversationsApiClient
         try
         {
             string afterParam = string.IsNullOrEmpty(after) ? string.Empty : $"&after={Uri.EscapeDataString(after)}";
-            Uri requestUri = new($"/v1/conversations/{conversationId}/items?order={order}&limit={limit}{afterParam}", UriKind.Relative);
+            Uri requestUri = new($"/v1/conversations/{Uri.EscapeDataString(conversationId)}/items?order={order}&limit={limit}{afterParam}", UriKind.Relative);
 
             HttpResponseMessage response = await this._httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
 
@@ -178,8 +239,8 @@ internal sealed class ConversationsApiClient
     /// <param name="conversationId">The unique conversation ID.</param>
     /// <param name="items">The items to add to the conversation.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task AddItemsAsync(
+    /// <returns>The list of added items.</returns>
+    public async Task<ListResponse<ItemResource>> AddItemsAsync(
         string conversationId,
         IEnumerable<ItemParam> items,
         CancellationToken cancellationToken = default)
@@ -191,7 +252,11 @@ internal sealed class ConversationsApiClient
 
         if (itemList.Count == 0)
         {
-            return;
+            return new ListResponse<ItemResource>
+            {
+                Data = [],
+                HasMore = false
+            };
         }
 
         try
@@ -201,7 +266,7 @@ internal sealed class ConversationsApiClient
                 Items = itemList
             };
 
-            Uri requestUri = new($"/v1/conversations/{conversationId}/items", UriKind.Relative);
+            Uri requestUri = new($"/v1/conversations/{Uri.EscapeDataString(conversationId)}/items", UriKind.Relative);
 
             HttpResponseMessage response = await this._httpClient.PostAsJsonAsync(
                 requestUri,
@@ -210,10 +275,83 @@ internal sealed class ConversationsApiClient
                 cancellationToken).ConfigureAwait(false);
 
             response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<ListResponse<ItemResource>>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
+            return result ?? new ListResponse<ItemResource>
+            {
+                Data = [],
+                HasMore = false
+            };
         }
         catch (HttpRequestException ex)
         {
             throw new InvalidOperationException($"Failed to add items to conversation '{conversationId}'.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Retrieves a specific item from a conversation.
+    /// </summary>
+    /// <param name="conversationId">The unique conversation ID.</param>
+    /// <param name="itemId">The unique item ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The item if found; otherwise, null.</returns>
+    public async Task<ItemResource?> GetItemAsync(string conversationId, string itemId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
+
+        try
+        {
+            Uri requestUri = new($"/v1/conversations/{Uri.EscapeDataString(conversationId)}/items/{Uri.EscapeDataString(itemId)}", UriKind.Relative);
+
+            HttpResponseMessage response = await this._httpClient.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<ItemResource>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new InvalidOperationException($"Failed to get item '{itemId}' in conversation '{conversationId}'.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Deletes a specific item from a conversation.
+    /// </summary>
+    /// <param name="conversationId">The unique conversation ID.</param>
+    /// <param name="itemId">The unique item ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>True if the item was deleted; otherwise, false.</returns>
+    public async Task<bool> DeleteItemAsync(string conversationId, string itemId, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(conversationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemId);
+
+        try
+        {
+            Uri requestUri = new($"/v1/conversations/{Uri.EscapeDataString(conversationId)}/items/{Uri.EscapeDataString(itemId)}", UriKind.Relative);
+
+            HttpResponseMessage response = await this._httpClient.DeleteAsync(requestUri, cancellationToken).ConfigureAwait(false);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return false;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            return true;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new InvalidOperationException($"Failed to delete item '{itemId}' in conversation '{conversationId}'.", ex);
         }
     }
 }

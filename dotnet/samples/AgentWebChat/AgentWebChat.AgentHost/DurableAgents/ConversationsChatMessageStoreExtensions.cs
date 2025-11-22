@@ -33,7 +33,7 @@ public static class ConversationsChatMessageStoreExtensions
     /// </code>
     /// </para>
     /// </remarks>
-    public static IServiceCollection AddConversationsChatMessageStore(this IServiceCollection services)
+    public static IServiceCollection AddConversationStorageClient(this IServiceCollection services)
     {
         services.AddSingleton<IConversationStorage, ConversationsChatMessageStore>();
         return services;
