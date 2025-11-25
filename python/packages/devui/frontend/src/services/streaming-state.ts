@@ -7,7 +7,7 @@
  * - Graceful recovery from network disconnections
  */
 
-import type { ExtendedResponseStreamEvent } from "@/types/openai";
+import type { ExtendedResponseStreamEvent, ConversationMessage } from "@/types/openai";
 
 export interface StreamingState {
   conversationId: string;
@@ -18,6 +18,7 @@ export interface StreamingState {
   timestamp: number; // When this state was last updated
   completed: boolean; // Whether the stream completed successfully
   accumulatedText?: string; // Accumulated text content for quick restoration
+  pendingUserMessage?: ConversationMessage; // The user message that triggered this stream
 }
 
 const STORAGE_KEY_PREFIX = "devui_streaming_state_";
@@ -88,9 +89,9 @@ export function loadStreamingState(conversationId: string): StreamingState | nul
     }
 
     // If stream was completed, no need to resume
-    if (state.completed) {
-      return null;
-    }
+    // if (state.completed) {
+    //   return null;
+    // }
 
     return state;
   } catch (error) {
@@ -109,20 +110,25 @@ export function updateStreamingState(
   lastMessageId?: string
 ): void {
   try {
-    const existing = loadStreamingState(conversationId);
+    // Load existing state directly from storage to avoid filtering out completed states
+    const key = getStorageKey(conversationId);
+    const data = localStorage.getItem(key);
+    const existing: StreamingState | null = data ? JSON.parse(data) : null;
+
     const sequenceNumber = "sequence_number" in event ? event.sequence_number : undefined;
     
     const newEvents = existing ? [...existing.events, event] : [event];
     
     const state: StreamingState = {
       conversationId,
-      responseId,
-      lastMessageId,
+      responseId: responseId || existing?.responseId || "",
+      lastMessageId: lastMessageId || existing?.lastMessageId,
       lastSequenceNumber: sequenceNumber ?? (existing?.lastSequenceNumber ?? -1),
       events: newEvents,
       timestamp: Date.now(),
       completed: event.type === "response.completed" || event.type === "response.failed",
       accumulatedText: extractAccumulatedText(newEvents),
+      pendingUserMessage: existing?.pendingUserMessage,
     };
 
     saveStreamingState(state);
@@ -136,7 +142,11 @@ export function updateStreamingState(
  */
 export function markStreamingCompleted(conversationId: string): void {
   try {
-    const existing = loadStreamingState(conversationId);
+    // Load existing state directly from storage
+    const key = getStorageKey(conversationId);
+    const data = localStorage.getItem(key);
+    const existing: StreamingState | null = data ? JSON.parse(data) : null;
+
     if (existing) {
       existing.completed = true;
       existing.timestamp = Date.now();
@@ -196,4 +206,29 @@ export function clearExpiredStreamingStates(): void {
 export function initStreamingState(): void {
   // Clear expired states on startup
   clearExpiredStreamingStates();
+}
+
+/**
+ * Initialize streaming state for a new request
+ */
+export function initializeStreamingState(
+  conversationId: string,
+  userMessage?: ConversationMessage
+): void {
+  try {
+    const state: StreamingState = {
+      conversationId,
+      responseId: "", // Will be updated when first event arrives
+      lastSequenceNumber: -1,
+      events: [],
+      timestamp: Date.now(),
+      completed: false,
+      accumulatedText: "",
+      pendingUserMessage: userMessage,
+    };
+
+    saveStreamingState(state);
+  } catch (error) {
+    console.error("Failed to initialize streaming state:", error);
+  }
 }

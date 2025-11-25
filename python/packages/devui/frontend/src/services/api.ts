@@ -629,7 +629,7 @@ class ApiClient {
                     if (!currentResponseId || currentResponseId !== newResponseId) {
                       currentResponseId = newResponseId;
                     }
-                  } else if ("id" in openAIEvent && typeof openAIEvent.id === "string" && openAIEvent.id.startsWith("resp_")) {
+                  } else if ("id" in openAIEvent && typeof openAIEvent.id === "string") {
                     const newResponseId = openAIEvent.id;
                     if (!currentResponseId || currentResponseId !== newResponseId) {
                       currentResponseId = newResponseId;
@@ -658,8 +658,8 @@ class ApiClient {
                       hasYieldedAnyEvent = true;
                       
                       // Save new event to storage
-                      if (conversationId && currentResponseId) {
-                        updateStreamingState(conversationId, openAIEvent, currentResponseId, lastMessageId);
+                      if (conversationId) {
+                        updateStreamingState(conversationId, openAIEvent, currentResponseId || "", lastMessageId);
                       }
                       
                       yield openAIEvent;
@@ -672,8 +672,8 @@ class ApiClient {
                       hasYieldedAnyEvent = true;
                       
                       // Save event to storage before yielding
-                      if (conversationId && currentResponseId) {
-                        updateStreamingState(conversationId, openAIEvent, currentResponseId, lastMessageId);
+                      if (conversationId) {
+                        updateStreamingState(conversationId, openAIEvent, currentResponseId || "", lastMessageId);
                       }
                       
                       yield openAIEvent;
@@ -683,8 +683,8 @@ class ApiClient {
                     hasYieldedAnyEvent = true;
                     
                     // Still save to storage if we have conversation context
-                    if (conversationId && currentResponseId) {
-                      updateStreamingState(conversationId, openAIEvent, currentResponseId, lastMessageId);
+                    if (conversationId) {
+                      updateStreamingState(conversationId, openAIEvent, currentResponseId || "", lastMessageId);
                     }
                     
                     yield openAIEvent;
@@ -945,4 +945,4 @@ export const apiClient = new ApiClient();
 export { ApiClient };
 
 // Export streaming state init function
-export { initStreamingState } from "./streaming-state";
+export { initStreamingState, initializeStreamingState } from "./streaming-state";

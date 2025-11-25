@@ -46,7 +46,7 @@ import type {
   ExtendedResponseStreamEvent,
 } from "@/types";
 import { useDevUIStore } from "@/stores";
-import { loadStreamingState } from "@/services/streaming-state";
+import { loadStreamingState, initializeStreamingState, clearStreamingState } from "@/services/streaming-state";
 
 type DebugEventHandler = (event: ExtendedResponseStreamEvent | "clear") => void;
 
@@ -294,18 +294,68 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
     }
   }, [isStreaming, isSubmitting]);
 
-  // Load conversations when agent changes
-  useEffect(() => {
-    // Resume streaming after page refresh
-    const resumeStreaming = async (
-      assistantMessage: import("@/types/openai").ConversationMessage,
-      conversation: Conversation,
-      agent: AgentInfo
-    ) => {
+  // Resume streaming after page refresh (useCallback so it can be called from multiple places)
+  const resumeStreaming = useCallback(async (
+    assistantMessage: import("@/types/openai").ConversationMessage,
+    conversation: Conversation,
+    agent: AgentInfo
+  ) => {
       // Load the stored state to get the response ID
       const storedState = loadStreamingState(conversation.id);
-      if (!storedState || !storedState.responseId) {
+      
+      // If no state, stop streaming
+      if (!storedState) {
         setIsStreaming(false);
+        return;
+      }
+
+      // If no response ID, we can't resume the stream, but we can poll for completion
+      if (!storedState.responseId) {
+        // Keep isStreaming=true to show typing indicator
+        // Poll for new items every 2 seconds
+        const pollInterval = setInterval(async () => {
+          try {
+            // Check if conversation still exists and get latest items
+            const result = await apiClient.listConversationItems(conversation.id, {
+              limit: 5,
+              order: "desc"
+            });
+            
+            const items = result.data as import("@/types/openai").ConversationItem[];
+            
+            // Check if we have new items that match our assistant message or are newer
+            // Since we don't have the assistant message ID in backend yet (it was generated locally),
+            // we look for ANY assistant message that is newer than our start time
+            // OR if the assistant message ID we generated matches one in the list (if we were lucky with ID generation, which we aren't usually)
+            
+            // Actually, simpler: just check if there are any new messages since we started
+            if (items.length > 0) {
+              // If we see a completed assistant message, we can stop polling
+              const latest = items[0];
+              if (latest.type === "message" && latest.role === "assistant" && latest.status === "completed") {
+                clearInterval(pollInterval);
+                
+                // Reload full conversation to sync up
+                const allItemsResult = await apiClient.listConversationItems(conversation.id, { order: "asc" });
+                setChatItems(allItemsResult.data as import("@/types/openai").ConversationItem[]);
+                setIsStreaming(false);
+              }
+            }
+          } catch (e) {
+            console.error("Polling failed", e);
+            clearInterval(pollInterval);
+            setIsStreaming(false);
+          }
+        }, 2000);
+        
+        // Stop polling after 60 seconds to prevent infinite loops
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          if (useDevUIStore.getState().isStreaming) {
+            setIsStreaming(false);
+          }
+        }, 60000);
+        
         return;
       }
 
@@ -486,8 +536,10 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
         ));
         setIsStreaming(false);
       }
-    };
+    }, [onDebugEvent, setChatItems, setIsStreaming, updateConversationUsage, setPendingApprovals]);
 
+  // Load conversations when agent changes
+  useEffect(() => {
     const loadConversations = async () => {
       if (!selectedAgent) return;
 
@@ -537,23 +589,69 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
               // Check for incomplete stream and resume if needed
               const state = loadStreamingState(mostRecent.id);
               
-              if (state && !state.completed) {
-                accumulatedTextRef.current = state.accumulatedText || "";
-                // Add assistant message with resumed text
-                const assistantMsg: import("@/types/openai").ConversationMessage = {
-                  id: state.lastMessageId || `assistant-${Date.now()}`,
-                  type: "message",
-                  role: "assistant",
-                  content: state.accumulatedText ? [{ type: "output_text", text: state.accumulatedText }] : [],
-                  status: "in_progress",
-                };
-                setChatItems([...allItems as import("@/types/openai").ConversationItem[], assistantMsg]);
-                setIsStreaming(true);
+              if (state) {
+                const items = allItems as import("@/types/openai").ConversationItem[];
+                const currentItems = [...items];
+                let needsUpdate = false;
 
-                // Resume streaming from where we left off
-                setTimeout(() => {
-                  resumeStreaming(assistantMsg, mostRecent, selectedAgent);
-                }, 100);
+                // Check if user message from state is already in backend items
+                const userMessageExists = state.pendingUserMessage && 
+                  currentItems.some(item => item.id === state.pendingUserMessage?.id);
+
+                // Check if assistant message from state is already in backend
+                const assistantMessageExists = state.lastMessageId && 
+                  currentItems.some(item => item.id === state.lastMessageId);
+
+                // If both messages are in the backend, clear the streaming state (no longer needed)
+                if (userMessageExists && assistantMessageExists) {
+                  clearStreamingState(mostRecent.id);
+                } else {
+                  // Restore pending user message if it exists and isn't already in the list
+                  if (state.pendingUserMessage && !userMessageExists) {
+                    currentItems.push(state.pendingUserMessage);
+                    needsUpdate = true;
+                  }
+
+                  // If assistant message is missing, restore from state
+                  if (!assistantMessageExists) {
+                    accumulatedTextRef.current = state.accumulatedText || "";
+                    // Add assistant message with resumed text
+                    const assistantMsg: import("@/types/openai").ConversationMessage = {
+                      id: state.lastMessageId || `assistant-${Date.now()}`,
+                      type: "message",
+                      role: "assistant",
+                      content: state.accumulatedText ? [{ type: "output_text", text: state.accumulatedText }] : [],
+                      status: state.completed ? "completed" : "in_progress",
+                    };
+                    
+                    // Add assistant message
+                    currentItems.push(assistantMsg);
+                    needsUpdate = true;
+                    
+                    // Only resume streaming if not completed
+                    if (!state.completed) {
+                      setIsStreaming(true);
+
+                      // Resume streaming from where we left off
+                      setTimeout(() => {
+                        resumeStreaming(assistantMsg, mostRecent, selectedAgent);
+                      }, 100);
+                    }
+                  }
+                }
+
+                if (needsUpdate) {
+                  // Deduplicate by ID before setting (safety check)
+                  const seenIds = new Set<string>();
+                  const deduplicated = currentItems.filter(item => {
+                    if (seenIds.has(item.id)) {
+                      return false; // Skip duplicate
+                    }
+                    seenIds.add(item.id);
+                    return true;
+                  });
+                  setChatItems(deduplicated);
+                }
               }
 
               // Scroll to bottom after loading conversation
@@ -1037,18 +1135,70 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
 
         // Check for incomplete stream and restore accumulated text
         const state = loadStreamingState(conversationId);
-        if (state?.accumulatedText) {
-          accumulatedTextRef.current = state.accumulatedText;
-          // Add assistant message with resumed text - streaming will continue automatically
-          const assistantMsg: import("@/types/openai").ConversationMessage = {
-            id: `assistant-${Date.now()}`,
-            type: "message",
-            role: "assistant",
-            content: [{ type: "output_text", text: state.accumulatedText }],
-            status: "in_progress",
-          };
-          setChatItems([...items, assistantMsg]);
-          setIsStreaming(true);
+        if (state) {
+          const currentItems = [...items];
+          let needsUpdate = false;
+
+          // Check if user message from state is already in items
+          const userMessageExists = state.pendingUserMessage && 
+            currentItems.some(item => item.id === state.pendingUserMessage?.id);
+
+          // Check if assistant message from state is already in backend
+          const assistantMessageExists = state.lastMessageId && 
+            currentItems.some(item => item.id === state.lastMessageId);
+
+          // If both messages are in the backend, clear the streaming state (no longer needed)
+          if (userMessageExists && assistantMessageExists) {
+            clearStreamingState(conversationId);
+          } else {
+            // Restore pending user message if it exists and isn't already in the list
+            if (state.pendingUserMessage && !userMessageExists) {
+              currentItems.push(state.pendingUserMessage);
+              needsUpdate = true;
+            }
+
+            // If assistant message is missing, restore from state
+            if (!assistantMessageExists) {
+              accumulatedTextRef.current = state.accumulatedText || "";
+              // Add assistant message with resumed text
+              const assistantMsg: import("@/types/openai").ConversationMessage = {
+                id: state.lastMessageId || `assistant-${Date.now()}`,
+                type: "message",
+                role: "assistant",
+                content: state.accumulatedText ? [{ type: "output_text", text: state.accumulatedText }] : [],
+                status: state.completed ? "completed" : "in_progress",
+              };
+              
+              currentItems.push(assistantMsg);
+              needsUpdate = true;
+              
+              // Only set streaming to true if not completed
+              if (!state.completed) {
+                setIsStreaming(true);
+                
+                // Resume streaming from where we left off
+                const conv = availableConversations.find(c => c.id === conversationId);
+                if (conv) {
+                  setTimeout(() => {
+                    resumeStreaming(assistantMsg, conv, selectedAgent);
+                  }, 100);
+                }
+              }
+            }
+          }
+
+          if (needsUpdate) {
+            // Deduplicate by ID before setting (safety check)
+            const seenIds = new Set<string>();
+            const deduplicated = currentItems.filter(item => {
+              if (seenIds.has(item.id)) {
+                return false; // Skip duplicate
+              }
+              seenIds.add(item.id);
+              return true;
+            });
+            setChatItems(deduplicated);
+          }
         }
 
         // Scroll to bottom after loading conversation
@@ -1066,7 +1216,7 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
 
       accumulatedTextRef.current = "";
     },
-    [availableConversations, onDebugEvent, setCurrentConversation, setChatItems, setIsStreaming]
+    [availableConversations, onDebugEvent, setCurrentConversation, setChatItems, setIsStreaming, resumeStreaming, selectedAgent]
   );
 
   // Handle function approval responses
@@ -1172,9 +1322,11 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
       // Capture timestamp once for both user and assistant messages
       const messageTimestamp = Math.floor(Date.now() / 1000); // Unix seconds
 
+      let userMessage: import("@/types/openai").ConversationMessage | undefined;
+
       // Only add user message to UI if it's not an approval response (internal messages)
       if (!isApprovalResponse && messageContent.length > 0) {
-        const userMessage: import("@/types/openai").ConversationMessage = {
+        userMessage = {
           id: `user-${Date.now()}`,
           type: "message",
           role: "user",
@@ -1224,9 +1376,9 @@ export function AgentView({ selectedAgent, onDebugEvent }: AgentViewProps) {
           }
         }
 
-        // Clear any previous streaming state for this conversation before starting new message
+        // Initialize streaming state for this conversation before starting new message
         if (conversationToUse?.id) {
-          apiClient.clearStreamingState(conversationToUse.id);
+          initializeStreamingState(conversationToUse.id, userMessage);
         }
 
         const apiRequest = {
