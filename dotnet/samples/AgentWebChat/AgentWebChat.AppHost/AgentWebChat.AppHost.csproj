@@ -9,6 +9,7 @@
     <Nullable>enable</Nullable>
     <IsAspireHost>true</IsAspireHost>
     <UserSecretsId>2969a84d-8ee6-4304-8737-6e469a315aa8</UserSecretsId>
+    <NoWarn>$(NoWarn);ASPIREHOSTINGPYTHON001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +19,7 @@
     <PackageReference Include="Aspire.Hosting.Orleans" />
     <PackageReference Include="Aspire.Hosting.NodeJs" />
     <PackageReference Include="Aspire.Hosting.Redis" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Python.Extensions" />
   </ItemGroup>
 
   <ItemGroup>

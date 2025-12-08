@@ -6,7 +6,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var azOpenAiResource = builder.AddParameterFromConfiguration("AzureOpenAIName", "AzureOpenAI:Name");
 var azOpenAiResourceGroup = builder.AddParameterFromConfiguration("AzureOpenAIResourceGroup", "AzureOpenAI:ResourceGroup");
-var chatModel = builder.AddAIModel("chat-model").AsAzureOpenAI("gpt-4o", o => o.AsExisting(azOpenAiResource, azOpenAiResourceGroup));
+var chatModel = builder.AddAIModel("chat-model").AsAzureOpenAI("gpt-4.1", o => o.AsExisting(azOpenAiResource, azOpenAiResourceGroup));
 
 var storage = builder.AddAzureStorage("storage").RunAsEmulator(emulator => emulator.WithDataBindMount());
 var grainState = storage.AddBlobs("state");
@@ -28,6 +28,14 @@ var agentHost = builder.AddProject<Projects.AgentWebChat_AgentHost>("agenthost")
     .WithUrlForEndpoint("devui", (url) => new() { Url = "/devui", DisplayText = "Dev UI" })
     .WithEnvironment("Worker__GatewayBaseAddress", gateway.GetEndpoint("http")!)
     .WithReference(chatModel);
+
+// Python agent worker
+var pythonAgent = builder.AddPythonApp(
+    name: "python-agent",
+    projectDirectory: "../PythonAgent",
+    scriptPath: "src/agent_worker/main.py")
+    .WithHttpEndpoint(port: 5100, name: "http")
+    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"));
 
 // Web front-end depends on gateway (not agent host directly anymore)
 builder.AddProject<Projects.AgentWebChat_Web>("webfrontend")
