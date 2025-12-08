@@ -13,6 +13,10 @@ using Microsoft.Agents.AI.Hosting;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
+using System.ClientModel;
+using System.ClientModel.Primitives;
+using OpenAI;
+using OpenAI.Responses;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -123,6 +127,59 @@ builder.AddWorkflow("nonAgentWorkflow", (sp, key) =>
     var agents = usedAgents.Select(ab => sp.GetRequiredKeyedService<AIAgent>(ab.Name));
     return AgentWorkflowBuilder.BuildSequential(workflowName: key, agents: agents);
 });
+
+// Story writer agent (generates creative stories)
+var storyWriterAgent = builder.AddAIAgent(
+    "story-writer",
+    instructions: "You are a creative story writer. Write short, imaginative stories (2-3 sentences) based on the given prompt.",
+    description: "An agent that writes creative short stories.",
+    chatClientServiceKey: "chat-model");
+
+// Python pig latin agent (discovered via gateway)
+// Note: This creates a proxy that calls the Python agent through the gateway
+builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-agent", (sp, key) =>
+{
+    var gatewayUrl = builder.Configuration["Worker:GatewayBaseAddress"];
+    if (string.IsNullOrEmpty(gatewayUrl))
+    {
+        throw new InvalidOperationException("Worker:GatewayBaseAddress configuration is required for Python agent integration");
+    }
+
+    var httpClient = new HttpClient { BaseAddress = new Uri(gatewayUrl) };
+
+    var options = new OpenAIClientOptions
+    {
+        Endpoint = new Uri(httpClient.BaseAddress!, "/v1/"),
+        Transport = new HttpClientPipelineTransport(httpClient)
+    };
+
+    var responseClient = new OpenAIResponseClient(
+        model: "pig-latin-agent",
+        credential: new ApiKeyCredential("dummy-key"),
+        options: options
+    );
+
+    return new OpenAIResponseClientAgent(
+        responseClient,
+        name: "pig-latin-agent",
+        description: "Translates English text to Pig Latin"
+    );
+});
+
+// Polyglot workflow: .NET writes story, Python translates to Pig Latin
+var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) =>
+{
+    var agents = new AIAgent[]
+    {
+        sp.GetRequiredKeyedService<AIAgent>("story-writer"),
+        sp.GetRequiredKeyedService<AIAgent>("pig-latin-agent")
+    };
+
+    return AgentWorkflowBuilder.BuildSequential(
+        workflowName: key,
+        agents: agents
+    );
+}).AddAsAIAgent();
 
 builder.Services.AddKeyedSingleton("NonAgentAndNonmatchingDINameWorkflow", (sp, key) =>
 {

@@ -1,5 +1,9 @@
 # Python Agent Integration - Polyglot Agent System
 
+> **Implementation Status**: ✅ **COMPLETE** (Steps 1-9)  
+> **Last Updated**: 2025-12-08  
+> **Status**: Ready for testing
+
 ## Overview & Goals
 
 This document outlines the implementation of Python agent support in the AgentWebChat system, enabling polyglot agent workflows where .NET and Python agents can seamlessly collaborate.
@@ -980,6 +984,161 @@ app = FastAPI(lifespan=lifespan)
 - Need to determine network addresses
 - Potential race conditions if gateway isn't ready
 ```
+
+## Implementation Progress
+
+### ✅ Completed Steps (1-6)
+
+**Step 1: Create Python Project Structure** ✅
+- Created `PythonAgent/` directory under `dotnet/samples/AgentWebChat/`
+- Initialized UV project with Python 3.12
+- Configured `pyproject.toml` with FastAPI, Uvicorn, Pydantic dependencies
+- Created proper directory structure (`src/agent_worker/`, `agents/`)
+- Installed all dependencies successfully
+
+**Step 2: Implement Pydantic Models** ✅
+- Created `models.py` with complete schema definitions
+- Implemented `CreateResponse`, `AgentResource`, `AgentCard`
+- Implemented all streaming event types: `ResponseCreatedEvent`, `ResponseInProgressEvent`, `OutputItemAddedEvent`, `OutputTextDeltaEvent`, `OutputTextDoneEvent`, `ResponseCompletedEvent`, `ResponseFailedEvent`
+- Added proper type hints and documentation
+
+**Step 3: Implement SSE Streaming Utilities** ✅
+- Created `streaming.py` with `stream_events()` helper
+- Properly formats Pydantic events to SSE format expected by gateway
+
+**Step 4: Implement Pig Latin Agent** ✅
+- Created `pig_latin.py` with full translation logic
+- Implemented `translate_to_pig_latin()` function that:
+  - Handles vowel-starting words (add "way")
+  - Handles consonant-starting words (move to end + "ay")
+  - Preserves capitalization and punctuation
+- Implemented `execute_pig_latin_agent()` async generator
+- Emits proper streaming events with sequence numbers
+- Tested locally - translation works correctly ("Hello world" → "Ellohay orldway")
+
+**Step 5: Implement FastAPI Application** ✅
+- Created `main.py` with complete FastAPI app
+- Implemented 3 required endpoints:
+  - `GET /health` - Health check
+  - `GET /agents` - Discovery (returns pig-latin-agent card)
+  - `POST /v1/responses` - Execution with SSE streaming
+- Agent registry system for extensibility
+- Proper error handling for unknown agents
+
+**Step 6: Update Aspire AppHost** ✅
+- Added `CommunityToolkit.Aspire.Hosting.Python.Extensions` package (version 9.0.0)
+- Updated `Directory.Packages.props` with central package management
+- Updated `AgentWebChat.AppHost.csproj` with package reference
+- Updated `Program.cs` to register Python worker:
+  ```csharp
+  var pythonAgent = builder.AddPythonApp(
+      name: "python-agent",
+      projectDirectory: "../PythonAgent",
+      scriptPath: "src/agent_worker/main.py")
+      .WithHttpEndpoint(port: 5100, name: "http")
+      .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"));
+  ```
+- Suppressed `ASPIREHOSTINGPYTHON001` diagnostic
+- **Build verified**: All projects build successfully with no regressions
+
+### 🚧 Remaining Steps (7-9)
+
+**Step 7: Update .NET AgentHost with Workflow** ✅ **COMPLETE**
+- ✅ Added story-writer agent (.NET)
+- ✅ Added Python agent proxy/reference using `OpenAIResponseClientAgent`
+- ✅ Created polyglot workflow combining both agents
+- ✅ Added required using statements for OpenAI types
+- ✅ Added project reference to `Microsoft.Agents.AI.OpenAI`
+- Files modified:
+  - `AgentWebChat.AgentHost/Program.cs`
+  - `AgentWebChat.AgentHost/AgentWebChat.AgentHost.csproj`
+
+**Step 8: Test the Integration** ⏭️ **SKIPPED**
+- Skipped per user request
+- Code is ready for testing when needed
+
+**Step 9: Create Python README** ✅ **COMPLETE**
+- ✅ Created comprehensive `PythonAgent/README.md`
+- ✅ Documented all agent capabilities
+- ✅ Included development setup instructions
+- ✅ Explained architecture and worker contract
+- ✅ Documented how to add new agents
+- ✅ Included auto-registration pattern example
+- ✅ Added troubleshooting section
+
+### Implementation Complete! 🎉
+
+All implementation steps have been completed:
+
+1. ✅ **Python Agent Worker** - Full FastAPI application with pig-latin-agent
+2. ✅ **Aspire Integration** - Python worker registered in AppHost
+3. ✅ **.NET Workflow** - Polyglot workflow combining .NET and Python agents
+4. ✅ **Documentation** - Comprehensive README for Python developers
+
+### Ready for Testing
+
+The implementation is complete and ready for end-to-end testing:
+
+```bash
+# Start the Aspire application
+cd dotnet/samples/AgentWebChat
+aspire run
+```
+
+This will start:
+- **Gateway** - Routes requests and manages state
+- **.NET AgentHost** - Hosts the story-writer agent and polyglot workflow
+- **Python Worker** - Hosts the pig-latin-agent
+- **Web Frontend** - UI for interacting with agents
+
+### Testing the Polyglot Workflow
+
+Once running, you can test the polyglot workflow:
+
+1. Navigate to the Aspire dashboard or DevUI
+2. Find the "polyglot-story-workflow" workflow
+3. Send a prompt: "Write a story about a dragon"
+4. Expected behavior:
+   - .NET `story-writer` agent creates a short story
+   - Python `pig-latin-agent` translates it to Pig Latin
+   - Final output is the story in Pig Latin
+
+### Files Modified
+
+```
+dotnet/
+├── Directory.Packages.props                                    # Added Python package version
+└── samples/AgentWebChat/
+    ├── Polyglot.md                                            # This file (implementation guide)
+    ├── AgentWebChat.AppHost/
+    │   ├── AgentWebChat.AppHost.csproj                       # Added Python package reference
+    │   └── Program.cs                                         # Registered Python worker
+    ├── AgentWebChat.AgentHost/
+    │   ├── AgentWebChat.AgentHost.csproj                     # Added Microsoft.Agents.AI.OpenAI reference
+    │   └── Program.cs                                         # Added story-writer, Python proxy, polyglot workflow
+    └── PythonAgent/                                           # NEW - Complete Python agent
+        ├── .gitignore
+        ├── .python-version                                    # Python 3.12
+        ├── pyproject.toml                                     # UV project config
+        ├── README.md                                          # Comprehensive documentation
+        └── src/agent_worker/
+            ├── __init__.py
+            ├── main.py                                        # FastAPI app with 3 endpoints
+            ├── models.py                                      # Pydantic schemas
+            ├── streaming.py                                   # SSE helper
+            └── agents/
+                ├── __init__.py
+                └── pig_latin.py                               # Pig Latin translation agent
+```
+
+### Testing Notes
+
+The Python agent has been tested locally and works correctly:
+- Health check: `curl http://localhost:5100/health` → `{"status":"healthy"}`
+- Discovery: `curl http://localhost:5100/agents` → Returns pig-latin-agent card
+- Translation: "Hello world this is a test" → "Ellohay orldway isthay isway away esttay"
+
+The .NET solution builds successfully with no errors or warnings.
 
 ## Summary
 
