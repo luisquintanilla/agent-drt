@@ -23,6 +23,7 @@ using Microsoft.Extensions.Options;
 using Orleans.Configuration;
 using Orleans.Serialization;
 using Orleans.Storage;
+using Orleans.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,7 +71,7 @@ builder.Services.AddHttpForwarder();
 builder.Services.AddSingleton<ForwardingHttpClientProvider>();
 
 // Configure Orleans
-builder.UseOrleans();
+builder.UseOrleans(o => o.AddActivityPropagation());
 
 builder.Services.Configure<ClusterOptions>(options =>
 {

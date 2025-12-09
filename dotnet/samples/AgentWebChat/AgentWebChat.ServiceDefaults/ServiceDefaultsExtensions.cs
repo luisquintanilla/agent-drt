@@ -61,6 +61,8 @@ public static class ServiceDefaultsExtensions
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    .AddSource("Microsoft.Orleans.Application")
+                    //.AddSource("Microsoft.Orleans.Runtime")
                     .AddSource("*Microsoft.Agents.AI")
                     .AddSource("Microsoft.Agents.AI.Runtime.InProcess")
                     .AddSource("Microsoft.Agents.AI.Runtime.Abstractions.InMemoryActorStateStorage")
