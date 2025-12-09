@@ -22,7 +22,8 @@
     <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireAppHostSdkVersion)" />
     <PackageVersion Include="Aspire.Microsoft.Azure.Cosmos" Version="$(AspireAppHostSdkVersion)" />
     <PackageVersion Include="Aspire.StackExchange.Redis" Version="$(AspireAppHostSdkVersion)" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Python.Extensions" Version="9.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Python" Version="$(AspireAppHostSdkVersion)" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Python.Extensions" Version="13.0.0" />
     <PackageVersion Include="CommunityToolkit.Aspire.OllamaSharp" Version="13.0.0-beta.440" />
     <!-- Azure.* -->
     <PackageVersion Include="Azure.AI.Projects" Version="1.2.0-beta.3" />
