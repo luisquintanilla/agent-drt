@@ -1,12 +1,16 @@
 using System;
 using System.Net.Http;
 using AgentContracts;
+using AgentContracts.Monitoring;
+using AgentContracts.Telemetry;
 using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 using AgentGateway;
 using AgentGateway.Conversations;
 using AgentGateway.DevUI;
 using AgentGateway.Health;
+using AgentGateway.Monitoring;
 using AgentGateway.Workflows;
+using AgentGateway.Telemetry;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using AgentGateway.Responses;
 using AgentGateway.Utilities;
@@ -148,6 +152,13 @@ builder.Services.AddSingleton<IEntityProvider, WorkerRegistryEntityProvider>();
 // Register workflow executor for dispatching to workers
 builder.Services.AddSingleton<IWorkflowExecutor, WorkerWorkflowExecutor>();
 
+// Register monitoring services
+builder.Services.AddSingleton<IMonitoringEventBroadcaster, MonitoringEventBroadcaster>();
+builder.Services.AddSingleton<IMonitoringService, MonitoringService>();
+
+// Register telemetry
+builder.Services.AddGatewayTelemetry();
+
 builder.AddOpenAIResponses();
 
 var app = builder.Build();
@@ -176,6 +187,9 @@ app.MapOpenAIResponses();
 
 // Map Workflow API endpoints
 app.MapWorkflows();
+
+// Map Monitoring API endpoints
+app.MapMonitoring();
 
 // Map DevUI
 app.MapDevUI();

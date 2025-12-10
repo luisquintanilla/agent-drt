@@ -42,4 +42,11 @@ builder.AddNpmApp("marketr", "../MarketR", "dev")
     .WithExternalHttpEndpoints()
     .WaitFor(gateway);
 
+// MonitorDashboard React frontend for system monitoring
+builder.AddNpmApp("monitor", "../MonitorDashboard", "dev")
+    .WithReference(gateway)
+    .WithHttpEndpoint(port: 5174, env: "PORT")
+    .WithExternalHttpEndpoints()
+    .WaitFor(gateway);
+
 builder.Build().Run();

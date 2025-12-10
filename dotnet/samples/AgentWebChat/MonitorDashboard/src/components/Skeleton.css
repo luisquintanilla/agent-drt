@@ -1,0 +1,48 @@
+.skeleton {
+  display: inline-block;
+  background: linear-gradient(90deg, var(--border) 0%, var(--card-inner-bg) 50%, var(--border) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  border-radius: 4px;
+  height: 1em;
+}
+
+.skeleton-rect {
+  border-radius: 4px;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+}
+
+.skeleton-badge {
+  border-radius: 12px;
+  height: 1.25rem;
+  width: 3.5rem;
+}
+
+/* Skeleton row for status sections */
+.skeleton-section {
+  padding: 1rem;
+  background: var(--card-inner-bg, #fafafa);
+  border-radius: 6px;
+  border: 1px solid var(--border, #e0e0e0);
+}
+
+.skeleton-section-header {
+  height: 0.875rem;
+  width: 60%;
+  margin-bottom: 0.75rem;
+}

@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using AgentContracts.Telemetry;
 using AgentContracts.Workflows;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -50,6 +51,9 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
 
     public async Task RegisterAsync(WorkflowRunSummary summary, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("register", "WorkflowIndexGrain", summary.Id);
+        activity?.SetTag(TelemetryConstants.WorkflowName, summary.WorkflowName);
+
         ArgumentNullException.ThrowIfNull(summary);
 
         this._state.State.Runs[summary.Id] = summary;
@@ -63,6 +67,9 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
 
     public async Task UpdateAsync(string runId, WorkflowRunStatus status, int pendingRequestCount, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("update", "WorkflowIndexGrain", runId);
+        activity?.SetTag(TelemetryConstants.WorkflowStatus, status.ToString());
+
         if (!this._state.State.Runs.TryGetValue(runId, out var existing))
         {
             this._logger.LogWarning("Attempted to update non-existent workflow {RunId} in index", runId);
@@ -93,6 +100,13 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
         string? before,
         CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("list", "WorkflowIndexGrain", "default");
+        activity?.SetTag("list.limit", limit);
+        if (statusFilter.HasValue)
+        {
+            activity?.SetTag("list.status_filter", statusFilter.Value.ToString());
+        }
+
         var query = this._state.State.OrderedRunIds.AsEnumerable();
 
         // Apply cursor-based pagination

@@ -1,0 +1,242 @@
+.worker-list-widget {
+  background: var(--card-bg, #ffffff);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.worker-list-widget.loading,
+.worker-list-widget.error {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.worker-list-widget h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.refresh-button {
+  padding: 0.25rem 0.75rem;
+  background: var(--primary, #0066cc);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.refresh-button:hover {
+  background: var(--primary-hover, #0052a3);
+}
+
+.retry-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--primary, #0066cc);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error-message {
+  color: var(--error, #d32f2f);
+}
+
+.no-data {
+  color: var(--text-secondary, #666);
+  text-align: center;
+  padding: 2rem;
+}
+
+.worker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.worker-card {
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 6px;
+  padding: 0.75rem;
+  background: var(--card-inner-bg, #fafafa);
+}
+
+.worker-card.healthy {
+  border-left: 4px solid var(--success, #4caf50);
+}
+
+.worker-card.unhealthy {
+  border-left: 4px solid var(--error, #d32f2f);
+}
+
+.worker-card.degraded {
+  border-left: 4px solid var(--warning, #ff9800);
+}
+
+.worker-card.unknown {
+  border-left: 4px solid var(--text-secondary, #666);
+}
+
+.worker-card.draining {
+  opacity: 0.85;
+  background: var(--draining-bg, #fff8e1);
+}
+
+.worker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.worker-id {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.health-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.health-badge.healthy {
+  background: var(--success-bg, #e8f5e9);
+  color: var(--success, #4caf50);
+}
+
+.health-badge.unhealthy {
+  background: var(--error-bg, #ffebee);
+  color: var(--error, #d32f2f);
+}
+
+.health-badge.degraded {
+  background: var(--warning-bg, #fff3e0);
+  color: var(--warning-text, #e65100);
+}
+
+.health-badge.unknown {
+  background: var(--unknown-bg, #f5f5f5);
+  color: var(--text-secondary, #666);
+}
+
+.worker-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.25rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.detail-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.detail-row .label {
+  color: var(--text-secondary, #666);
+}
+
+.detail-row .value {
+  color: var(--text-primary, #1a1a1a);
+}
+
+.detail-row .value.draining {
+  color: var(--warning-text, #e65100);
+  font-weight: 500;
+}
+
+.supported-items {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.supported-items .label {
+  color: var(--text-secondary, #666);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.tag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.tag.workflow-tag {
+  background: var(--workflow-tag-bg, #e3f2fd);
+  color: var(--workflow-tag-text, #1565c0);
+}
+
+.tag.agent-tag {
+  background: var(--agent-tag-bg, #f3e5f5);
+  color: var(--agent-tag-text, #7b1fa2);
+}
+
+.worker-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-button {
+  padding: 0.25rem 0.75rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-button.drain {
+  background: var(--warning-bg, #fff3e0);
+  color: var(--warning-text, #e65100);
+  border: 1px solid var(--warning, #ff9800);
+}
+
+.action-button.drain:hover:not(:disabled) {
+  background: var(--warning, #ff9800);
+  color: white;
+}
+
+.action-button.enable {
+  background: var(--success-bg, #e8f5e9);
+  color: var(--success, #4caf50);
+  border: 1px solid var(--success, #4caf50);
+}
+
+.action-button.enable:hover:not(:disabled) {
+  background: var(--success, #4caf50);
+  color: white;
+}
+
+.worker-card.skeleton-card {
+  opacity: 0.8;
+}

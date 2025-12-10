@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using AgentContracts.Telemetry;
 using AgentContracts.Workflows;
 
 namespace AgentWebChat.AgentHost.Workflows;
@@ -57,6 +59,8 @@ internal sealed class WorkflowHostService : IWorkflowHost
         WorkflowExecutionRequest request,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartWorkflowExecution(request.RunId, request.WorkflowName, ActivityKind.Server);
+
         _logger.LogInformation("Starting workflow execution: {RunId} (workflow: {WorkflowName})",
             request.RunId, request.WorkflowName);
 
@@ -64,6 +68,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         if (!_workflowRegistry.TryGetValue(request.WorkflowName, out var workflowType))
         {
             _logger.LogError("Unknown workflow: {WorkflowName}", request.WorkflowName);
+            WorkflowActivitySource.RecordException(activity, new InvalidOperationException($"Unknown workflow: '{request.WorkflowName}'"));
             yield return new WorkflowFailedEvent
             {
                 RunId = request.RunId,
@@ -216,6 +221,8 @@ internal sealed class WorkflowHostService : IWorkflowHost
         WorkflowResumeRequest request,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartWorkflowResume(request.RunId, request.WorkflowName, request.Signal.RequestId);
+
         _logger.LogInformation("Resuming workflow: {RunId} with signal for request {RequestId}",
             request.RunId, request.Signal.RequestId);
 
@@ -223,6 +230,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         if (!_workflowRegistry.TryGetValue(request.WorkflowName, out var workflowType))
         {
             _logger.LogError("Unknown workflow: {WorkflowName}", request.WorkflowName);
+            WorkflowActivitySource.RecordException(activity, new InvalidOperationException($"Unknown workflow: '{request.WorkflowName}'"));
             yield return new WorkflowFailedEvent
             {
                 RunId = request.RunId,

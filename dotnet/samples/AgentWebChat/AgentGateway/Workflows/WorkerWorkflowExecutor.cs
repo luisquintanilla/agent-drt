@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using AgentContracts.Telemetry;
 using AgentContracts.Workflows;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -51,6 +53,8 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        using var activity = WorkflowActivitySource.StartWorkflowExecution(request.RunId, request.WorkflowName, ActivityKind.Client);
+
         this._logger.LogInformation(
             "Dispatching workflow execution: RunId={RunId}, WorkflowName={WorkflowName}",
             request.RunId, request.WorkflowName);
@@ -60,6 +64,7 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
         if (worker is null)
         {
             this._logger.LogError("No available worker supports workflow '{WorkflowName}'", request.WorkflowName);
+            WorkflowActivitySource.RecordException(activity, new InvalidOperationException($"No available worker supports workflow '{request.WorkflowName}'"));
             return new WorkflowExecutionResult
             {
                 Success = false,
@@ -67,6 +72,10 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
                 ErrorMessage = $"No available worker supports workflow '{request.WorkflowName}'"
             };
         }
+
+        // Add worker info to activity
+        activity?.SetTag(TelemetryConstants.WorkerId, worker.Id);
+        activity?.SetTag(TelemetryConstants.WorkerAddress, worker.Endpoint.ToString());
 
         // Build the request URL - workers should have a /v1/workflow-host/execute endpoint
         var workerEndpoint = new Uri(worker.Endpoint, "/v1/workflow-host/execute");
@@ -96,6 +105,8 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
                     "Worker {WorkerId} returned error {StatusCode} for workflow {RunId}: {ErrorBody}",
                     worker.Id, httpResponse.StatusCode, request.RunId, errorBody);
 
+                WorkflowActivitySource.RecordHttpResponse(activity, (int)httpResponse.StatusCode);
+
                 return new WorkflowExecutionResult
                 {
                     Success = false,
@@ -112,6 +123,10 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
                 "Workflow {RunId} execution dispatched successfully to worker {WorkerId}",
                 request.RunId, worker.Id);
 
+            WorkflowActivitySource.AddEvent(activity, TelemetryConstants.EventWorkerDispatched,
+                (TelemetryConstants.WorkerId, worker.Id),
+                (TelemetryConstants.WorkerAddress, worker.Endpoint.ToString()));
+
             return new WorkflowExecutionResult
             {
                 Success = true,
@@ -125,6 +140,7 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
         catch (Exception ex)
         {
             this._logger.LogError(ex, "Failed to dispatch workflow {RunId} to worker {WorkerId}", request.RunId, worker.Id);
+            WorkflowActivitySource.RecordException(activity, ex);
             return new WorkflowExecutionResult
             {
                 Success = false,
@@ -143,6 +159,8 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        using var activity = WorkflowActivitySource.StartWorkflowResume(request.RunId, request.WorkflowName, request.Signal.RequestId);
+
         this._logger.LogInformation(
             "Dispatching workflow resume: RunId={RunId}, WorkflowName={WorkflowName}, SignalRequestId={SignalRequestId}",
             request.RunId, request.WorkflowName, request.Signal.RequestId);
@@ -152,6 +170,7 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
         if (worker is null)
         {
             this._logger.LogError("No available worker supports workflow '{WorkflowName}'", request.WorkflowName);
+            WorkflowActivitySource.RecordException(activity, new InvalidOperationException($"No available worker supports workflow '{request.WorkflowName}'"));
             return new WorkflowExecutionResult
             {
                 Success = false,
@@ -159,6 +178,10 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
                 ErrorMessage = $"No available worker supports workflow '{request.WorkflowName}'"
             };
         }
+
+        // Add worker info to activity
+        activity?.SetTag(TelemetryConstants.WorkerId, worker.Id);
+        activity?.SetTag(TelemetryConstants.WorkerAddress, worker.Endpoint.ToString());
 
         // Build the request URL
         var workerEndpoint = new Uri(worker.Endpoint, "/v1/workflow-host/resume");
@@ -185,6 +208,8 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
                     "Worker {WorkerId} returned error {StatusCode} for workflow resume {RunId}: {ErrorBody}",
                     worker.Id, httpResponse.StatusCode, request.RunId, errorBody);
 
+                WorkflowActivitySource.RecordHttpResponse(activity, (int)httpResponse.StatusCode);
+
                 return new WorkflowExecutionResult
                 {
                     Success = false,
@@ -201,6 +226,10 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
                 "Workflow {RunId} resume dispatched successfully to worker {WorkerId}",
                 request.RunId, worker.Id);
 
+            WorkflowActivitySource.AddEvent(activity, TelemetryConstants.EventWorkerDispatched,
+                (TelemetryConstants.WorkerId, worker.Id),
+                (TelemetryConstants.WorkerAddress, worker.Endpoint.ToString()));
+
             return new WorkflowExecutionResult
             {
                 Success = true,
@@ -214,6 +243,7 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
         catch (Exception ex)
         {
             this._logger.LogError(ex, "Failed to dispatch workflow resume {RunId} to worker {WorkerId}", request.RunId, worker.Id);
+            WorkflowActivitySource.RecordException(activity, ex);
             return new WorkflowExecutionResult
             {
                 Success = false,

@@ -1,0 +1,161 @@
+.active-workflows-widget {
+  background: var(--card-bg, #ffffff);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.active-workflows-widget.loading,
+.active-workflows-widget.error {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.active-workflows-widget h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.refresh-button {
+  padding: 0.25rem 0.75rem;
+  background: var(--primary, #0066cc);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.refresh-button:hover {
+  background: var(--primary-hover, #0052a3);
+}
+
+.retry-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--primary, #0066cc);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error-message {
+  color: var(--error, #d32f2f);
+}
+
+.no-data {
+  color: var(--text-secondary, #666);
+  text-align: center;
+  padding: 2rem;
+}
+
+.workflow-list {
+  overflow-x: auto;
+}
+
+.workflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.workflow-table th {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 2px solid var(--border, #e0e0e0);
+  color: var(--text-secondary, #666);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.workflow-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border-light, #f0f0f0);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.workflow-table tbody tr:hover {
+  background: var(--hover-bg, #f5f5f5);
+}
+
+.run-id {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #666);
+}
+
+.workflow-name {
+  font-weight: 500;
+}
+
+.time {
+  white-space: nowrap;
+  color: var(--text-secondary, #666);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.running {
+  background: var(--running-bg, #e3f2fd);
+  color: var(--running-text, #1565c0);
+}
+
+.status-badge.completed {
+  background: var(--success-bg, #e8f5e9);
+  color: var(--success, #4caf50);
+}
+
+.status-badge.failed {
+  background: var(--error-bg, #ffebee);
+  color: var(--error, #d32f2f);
+}
+
+.status-badge.waiting {
+  background: var(--warning-bg, #fff3e0);
+  color: var(--warning-text, #e65100);
+}
+
+.status-badge.cancelled {
+  background: var(--cancelled-bg, #f5f5f5);
+  color: var(--text-secondary, #666);
+}
+
+.status-badge.unknown {
+  background: var(--unknown-bg, #f5f5f5);
+  color: var(--text-secondary, #666);
+}
+
+.signal {
+  text-align: center;
+}
+
+.pending-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--warning-bg, #fff3e0);
+  color: var(--warning-text, #e65100);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}

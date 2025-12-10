@@ -1,0 +1,178 @@
+:root {
+  /* Dark theme as default */
+  --primary: #4da6ff;
+  --primary-hover: #66b3ff;
+  --success: #66bb6a;
+  --success-bg: #1b3d1c;
+  --error: #ef5350;
+  --error-bg: #3d1b1b;
+  --warning: #ffb74d;
+  --warning-bg: #3d331b;
+  --warning-text: #ffb74d;
+  
+  --text-primary: #f5f5f5;
+  --text-secondary: #b0b0b0;
+  
+  --app-bg: #121212;
+  --card-bg: #1e1e1e;
+  --card-inner-bg: #252525;
+  --header-bg: #0d0d1a;
+  --hover-bg: #2a2a2a;
+  --event-list-bg: #1a1a1a;
+  --draining-bg: #3d331b;
+  
+  --border: #333333;
+  --border-light: #2a2a2a;
+  
+  --running-bg: #1a2a3d;
+  --running-text: #64b5f6;
+  --cancelled-bg: #2a2a2a;
+  --unknown-bg: #2a2a2a;
+  
+  --workflow-tag-bg: #1a2a3d;
+  --workflow-tag-text: #64b5f6;
+  --agent-tag-bg: #2d1a3d;
+  --agent-tag-text: #ba68c8;
+  
+  --worker-bg: #1a2d3d;
+  --worker-text: #4fc3f7;
+  
+  --step-bg: #2a2a2a;
+  --signal-bg: #3d1a2a;
+  --signal-text: #f48fb1;
+  
+  /* Font */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  
+  /* Rendering */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Light theme (class-based toggle) */
+.theme-light {
+  --primary: #0066cc;
+  --primary-hover: #0052a3;
+  --success: #4caf50;
+  --success-bg: #e8f5e9;
+  --error: #d32f2f;
+  --error-bg: #ffebee;
+  --warning: #ff9800;
+  --warning-bg: #fff3e0;
+  --warning-text: #e65100;
+  
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  
+  --app-bg: #f5f5f5;
+  --card-bg: #ffffff;
+  --card-inner-bg: #fafafa;
+  --header-bg: #1a1a2e;
+  --hover-bg: #f5f5f5;
+  --event-list-bg: #fafafa;
+  --draining-bg: #fff8e1;
+  
+  --border: #e0e0e0;
+  --border-light: #f0f0f0;
+  
+  --running-bg: #e3f2fd;
+  --running-text: #1565c0;
+  --cancelled-bg: #f5f5f5;
+  --unknown-bg: #f5f5f5;
+  
+  --workflow-tag-bg: #e3f2fd;
+  --workflow-tag-text: #1565c0;
+  --agent-tag-bg: #f3e5f5;
+  --agent-tag-text: #7b1fa2;
+  
+  --worker-bg: #e1f5fe;
+  --worker-text: #0277bd;
+  
+  --step-bg: #f5f5f5;
+  --signal-bg: #fce4ec;
+  --signal-text: #c2185b;
+}
+
+/* Light theme header keeps dark for contrast */
+.theme-light .app-header {
+  --text-primary: #f5f5f5;
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.skeleton {
+  background: var(--border);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+  height: 1em;
+  width: 100%;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+.skeleton-text.medium {
+  width: 80%;
+}
+
+.skeleton-badge {
+  height: 1.25rem;
+  width: 4rem;
+  border-radius: 12px;
+}

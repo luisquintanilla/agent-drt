@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using AgentContracts.Telemetry;
 using AgentContracts.Workflows;
 using AgentGateway.Utilities;
 using Microsoft.Extensions.Logging;
@@ -51,6 +52,9 @@ internal sealed class WorkflowGrain(
 
     public async Task<WorkflowRun> StartAsync(StartWorkflowRequest request, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("start", "WorkflowGrain", this.RunId);
+        activity?.SetTag(TelemetryConstants.WorkflowName, request.WorkflowName);
+
         if (workflowState.State.Run is not null)
         {
             throw new InvalidOperationException($"Workflow run '{this.RunId}' already exists.");
@@ -109,6 +113,9 @@ internal sealed class WorkflowGrain(
 
         logger.LogInformation("Workflow '{RunId}' started with workflow name '{WorkflowName}'", this.RunId, request.WorkflowName);
 
+        WorkflowActivitySource.AddEvent(activity, TelemetryConstants.EventWorkflowStateChanged,
+            (TelemetryConstants.WorkflowStatus, WorkflowRunStatus.Queued.ToString()));
+
         return this.GetRunWithETag();
     }
 
@@ -119,6 +126,8 @@ internal sealed class WorkflowGrain(
 
     public async Task<WorkflowRun> SendSignalAsync(WorkflowSignal signal, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartSignalDelivery(this.RunId, signal.RequestId);
+
         this.EnsureRunExists();
 
         var pendingRequest = workflowState.State.Run!.PendingRequests.FirstOrDefault(r => r.RequestId == signal.RequestId);
@@ -152,11 +161,16 @@ internal sealed class WorkflowGrain(
 
         logger.LogInformation("Workflow '{RunId}' received signal for request '{RequestId}'", this.RunId, signal.RequestId);
 
+        WorkflowActivitySource.AddEvent(activity, TelemetryConstants.EventSignalReceived,
+            (TelemetryConstants.SignalRequestId, signal.RequestId));
+
         return this.GetRunWithETag();
     }
 
     public async Task<WorkflowRun> CancelAsync(CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("cancel", "WorkflowGrain", this.RunId);
+
         this.EnsureRunExists();
 
         if (IsTerminalStatus(workflowState.State.Run!.Status))
@@ -182,6 +196,9 @@ internal sealed class WorkflowGrain(
 
     public async Task<WorkflowRun> AbortAsync(string reason, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("abort", "WorkflowGrain", this.RunId);
+        activity?.SetTag("abort.reason", reason);
+
         this.EnsureRunExists();
 
         if (IsTerminalStatus(workflowState.State.Run!.Status))
@@ -254,6 +271,11 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> UpdateStatusAsync(WorkflowRunStatusUpdate update, string? etag, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartStatusUpdate(
+            this.RunId,
+            workflowState.State.Run?.Status.ToString() ?? "Unknown",
+            update.Status.ToString());
+
         this.EnsureRunExists();
 
         var now = DateTimeOffset.UtcNow;
@@ -286,6 +308,8 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> RecordStepStartedAsync(WorkflowStepStartedRecord step, string? etag, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartStepExecution(this.RunId, step.StepId, step.ExecutorId, step.ExecutorName);
+
         this.EnsureRunExists();
 
         var stepInfo = new WorkflowStepInfo
@@ -321,6 +345,10 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> RecordStepCompletedAsync(WorkflowStepCompletedRecord step, string? etag, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("record_step_completed", "WorkflowGrain", this.RunId);
+        activity?.SetTag(TelemetryConstants.StepId, step.StepId);
+        activity?.SetTag(TelemetryConstants.StepDurationMs, step.DurationMs);
+
         this.EnsureRunExists();
 
         // Find and update the step
@@ -361,6 +389,8 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> RecordPendingRequestAsync(PendingExternalRequest request, string? etag, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartSignalRequest(this.RunId, request.RequestId, request.PortId);
+
         this.EnsureRunExists();
 
         workflowState.State.Run = workflowState.State.Run! with
@@ -413,6 +443,8 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> SaveCheckpointAsync(WorkflowCheckpointData checkpoint, string? etag, CancellationToken cancellationToken)
     {
+        using var activity = WorkflowActivitySource.StartSaveCheckpoint(this.RunId, checkpoint.CheckpointId);
+
         this.EnsureRunExists();
 
         workflowState.State.Checkpoint = checkpoint;

@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
 using AgentContracts;
+using AgentContracts.Telemetry;
 using AgentContracts.Workflows;
 
 namespace AgentWebChat.AgentHost.Workflows;
@@ -41,6 +42,10 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         string? etag,
         CancellationToken cancellationToken = default)
     {
+        using var activity = WorkflowActivitySource.StartHttpOperation("update_status", "PUT", $"/v1/workflows/{runId}/state/status");
+        activity?.SetTag(TelemetryConstants.WorkflowRunId, runId);
+        activity?.SetTag(TelemetryConstants.WorkflowStatus, update.Status.ToString());
+
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentNullException.ThrowIfNull(update);
 
@@ -61,6 +66,8 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         string? etag,
         CancellationToken cancellationToken = default)
     {
+        using var activity = WorkflowActivitySource.StartStepExecution(runId, step.StepId, step.ExecutorId, step.ExecutorName);
+
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentNullException.ThrowIfNull(step);
 
@@ -81,6 +88,10 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         string? etag,
         CancellationToken cancellationToken = default)
     {
+        using var activity = WorkflowActivitySource.StartGrainOperation("record_step_completed", "StateClient", runId);
+        activity?.SetTag(TelemetryConstants.StepId, step.StepId);
+        activity?.SetTag(TelemetryConstants.StepDurationMs, step.DurationMs);
+
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentNullException.ThrowIfNull(step);
 
@@ -138,6 +149,8 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         string? etag,
         CancellationToken cancellationToken = default)
     {
+        using var activity = WorkflowActivitySource.StartSaveCheckpoint(runId, checkpoint.CheckpointId);
+
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentNullException.ThrowIfNull(checkpoint);
 
@@ -156,6 +169,8 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         string runId,
         CancellationToken cancellationToken = default)
     {
+        using var activity = WorkflowActivitySource.StartLoadCheckpoint(runId);
+
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
 
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/checkpoint", UriKind.Relative);
