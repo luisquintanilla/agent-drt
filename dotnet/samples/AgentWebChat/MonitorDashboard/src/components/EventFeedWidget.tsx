@@ -157,23 +157,26 @@ function EventItem({ event }: EventItemProps) {
 }
 
 function getEventIconAndCategory(eventType: string): { icon: string; category: string } {
-  // Worker events
-  if (eventType.includes('Worker')) {
-    if (eventType.includes('Registered')) return { icon: '+', category: 'worker-add' };
-    if (eventType.includes('Deregistered')) return { icon: '-', category: 'worker-remove' };
-    if (eventType.includes('Health')) return { icon: 'H', category: 'worker-health' };
-    if (eventType.includes('Drain')) return { icon: 'D', category: 'worker-drain' };
-    if (eventType.includes('Enable')) return { icon: 'E', category: 'worker-enable' };
+  const type = eventType.toLowerCase();
+  
+  // Worker events (format: worker.*)
+  if (type.startsWith('worker.')) {
+    if (type.includes('registered') && !type.includes('deregistered')) return { icon: '+', category: 'worker-add' };
+    if (type.includes('deregistered')) return { icon: '-', category: 'worker-remove' };
+    if (type.includes('health')) return { icon: 'H', category: 'worker-health' };
+    if (type.includes('drain')) return { icon: 'D', category: 'worker-drain' };
+    if (type.includes('enable')) return { icon: 'E', category: 'worker-enable' };
     return { icon: 'W', category: 'worker' };
   }
 
-  // Workflow events
-  if (eventType.includes('Workflow')) {
-    if (eventType.includes('Started')) return { icon: '>', category: 'workflow-start' };
-    if (eventType.includes('Completed')) return { icon: 'v', category: 'workflow-complete' };
-    if (eventType.includes('Failed')) return { icon: 'x', category: 'workflow-fail' };
-    if (eventType.includes('Step')) return { icon: '.', category: 'workflow-step' };
-    if (eventType.includes('Signal')) return { icon: '!', category: 'workflow-signal' };
+  // Workflow events (format: workflow.*)
+  if (type.startsWith('workflow.')) {
+    if (type.includes('started') && !type.includes('step')) return { icon: '>', category: 'workflow-start' };
+    if (type.includes('completed') && !type.includes('step')) return { icon: 'v', category: 'workflow-complete' };
+    if (type.includes('failed')) return { icon: 'x', category: 'workflow-fail' };
+    if (type.includes('cancelled') || type.includes('aborted')) return { icon: 'x', category: 'workflow-fail' };
+    if (type.includes('step')) return { icon: '.', category: 'workflow-step' };
+    if (type.includes('signal') || type.includes('waiting')) return { icon: '!', category: 'workflow-signal' };
     return { icon: 'F', category: 'workflow' };
   }
 
@@ -181,8 +184,11 @@ function getEventIconAndCategory(eventType: string): { icon: string; category: s
 }
 
 function formatEventType(eventType: string): string {
-  // Convert PascalCase to spaced words
-  return eventType.replace(/([A-Z])/g, ' $1').trim();
+  // Convert dot.separated.lowercase to Title Case
+  return eventType
+    .split('.')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function formatTimestamp(isoDate: string): string {
@@ -198,23 +204,22 @@ function formatEventDetails(event: MonitoringEvent): string | null {
   const payload = event.payload;
   if (!payload || typeof payload !== 'object') return null;
 
+  const type = event.eventType.toLowerCase();
+
   // Worker events
-  if (event.eventType.includes('Worker')) {
+  if (type.startsWith('worker.')) {
     const workerPayload = payload as WorkerEventPayload;
     if (workerPayload.workerId) {
       const parts = [`Worker: ${truncateId(workerPayload.workerId)}`];
-      if (workerPayload.newState) {
-        parts.push(`State: ${workerPayload.newState}`);
-      }
-      if (workerPayload.reason) {
-        parts.push(`Reason: ${workerPayload.reason}`);
+      if (workerPayload.health) {
+        parts.push(`Health: ${workerPayload.health}`);
       }
       return parts.join(' | ');
     }
   }
 
   // Workflow events
-  if (event.eventType.includes('Workflow')) {
+  if (type.startsWith('workflow.')) {
     const wfPayload = payload as WorkflowEventPayload;
     const parts: string[] = [];
     
@@ -227,8 +232,8 @@ function formatEventDetails(event: MonitoringEvent): string | null {
     if (wfPayload.stepName) {
       parts.push(`Step: ${wfPayload.stepName}`);
     }
-    if (wfPayload.newStatus) {
-      parts.push(`Status: ${wfPayload.newStatus}`);
+    if (wfPayload.status) {
+      parts.push(`Status: ${wfPayload.status}`);
     }
     
     return parts.length > 0 ? parts.join(' | ') : null;

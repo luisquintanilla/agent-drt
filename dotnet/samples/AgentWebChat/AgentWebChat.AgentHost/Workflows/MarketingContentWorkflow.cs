@@ -1,7 +1,8 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AgentContracts.Workflows;
 
 namespace AgentWebChat.AgentHost.Workflows;
@@ -436,7 +437,10 @@ public sealed class ApprovalRequest
 /// </summary>
 public sealed class ApprovalResponse
 {
+    [JsonPropertyName("decision")]
     public string? Decision { get; init; }
+
+    [JsonPropertyName("feedback")]
     public string? Feedback { get; init; }
 }
 

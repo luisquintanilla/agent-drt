@@ -61,20 +61,21 @@ export interface MonitoringEvent {
 
 export interface WorkerEventPayload {
   workerId: string;
-  previousState?: string;
-  newState?: string;
-  reason?: string;
+  address?: string;
+  health?: string;
+  previousHealth?: string;
+  activeWorkflows?: number;
 }
 
 export interface WorkflowEventPayload {
   runId: string;
   workflowName?: string;
+  status?: string;
   previousStatus?: string;
-  newStatus?: string;
-  stepId?: string;
   stepName?: string;
-  artifactId?: string;
-  artifactName?: string;
+  workerId?: string;
+  errorMessage?: string;
+  durationMs?: number;
 }
 
 // ============ Workflow Detail Types ============

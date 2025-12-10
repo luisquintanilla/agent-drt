@@ -89,19 +89,21 @@ export function useMonitoringEvents(
       }
     };
 
-    // Listen for specific event types
-    eventSource.addEventListener('WorkerRegistered', handleEvent('WorkerRegistered'));
-    eventSource.addEventListener('WorkerDeregistered', handleEvent('WorkerDeregistered'));
-    eventSource.addEventListener('WorkerHealthChanged', handleEvent('WorkerHealthChanged'));
-    eventSource.addEventListener('WorkerDrained', handleEvent('WorkerDrained'));
-    eventSource.addEventListener('WorkerEnabled', handleEvent('WorkerEnabled'));
-    eventSource.addEventListener('WorkflowStarted', handleEvent('WorkflowStarted'));
-    eventSource.addEventListener('WorkflowCompleted', handleEvent('WorkflowCompleted'));
-    eventSource.addEventListener('WorkflowFailed', handleEvent('WorkflowFailed'));
-    eventSource.addEventListener('WorkflowStepStarted', handleEvent('WorkflowStepStarted'));
-    eventSource.addEventListener('WorkflowStepCompleted', handleEvent('WorkflowStepCompleted'));
-    eventSource.addEventListener('WorkflowSignalRequested', handleEvent('WorkflowSignalRequested'));
-    eventSource.addEventListener('WorkflowSignalReceived', handleEvent('WorkflowSignalReceived'));
+    // Listen for specific event types (must match backend MonitoringEventTypes)
+    eventSource.addEventListener('worker.registered', handleEvent('worker.registered'));
+    eventSource.addEventListener('worker.deregistered', handleEvent('worker.deregistered'));
+    eventSource.addEventListener('worker.health_changed', handleEvent('worker.health_changed'));
+    eventSource.addEventListener('worker.drained', handleEvent('worker.drained'));
+    eventSource.addEventListener('worker.enabled', handleEvent('worker.enabled'));
+    eventSource.addEventListener('workflow.started', handleEvent('workflow.started'));
+    eventSource.addEventListener('workflow.completed', handleEvent('workflow.completed'));
+    eventSource.addEventListener('workflow.failed', handleEvent('workflow.failed'));
+    eventSource.addEventListener('workflow.cancelled', handleEvent('workflow.cancelled'));
+    eventSource.addEventListener('workflow.aborted', handleEvent('workflow.aborted'));
+    eventSource.addEventListener('workflow.waiting_for_signal', handleEvent('workflow.waiting_for_signal'));
+    eventSource.addEventListener('workflow.signal_received', handleEvent('workflow.signal_received'));
+    eventSource.addEventListener('workflow.step.started', handleEvent('workflow.step.started'));
+    eventSource.addEventListener('workflow.step.completed', handleEvent('workflow.step.completed'));
 
     // Fallback for generic messages
     eventSource.onmessage = (event) => {

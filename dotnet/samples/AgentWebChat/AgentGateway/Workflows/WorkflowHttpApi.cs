@@ -1,10 +1,11 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using AgentContracts;
+using AgentContracts.Monitoring;
 using AgentContracts.Workflows;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -175,6 +176,7 @@ internal static class WorkflowHttpApi
         StartWorkflowRequest request,
         IGrainFactory grainFactory,
         IWorkflowExecutor workflowExecutor,
+        IMonitoringEventBroadcaster eventBroadcaster,
         IOptions<AgentGatewayOptions> gatewayOptions,
         HttpContext httpContext,
         ILogger<Program> logger,
@@ -188,6 +190,14 @@ internal static class WorkflowHttpApi
             // Create the workflow run in the grain
             var run = await grain.StartAsync(request, ct);
             logger.LogInformation("Workflow started: {RunId} (workflow: {WorkflowName})", runId, request.WorkflowName);
+
+            // Publish workflow started event
+            eventBroadcaster.PublishWorkflowEvent(MonitoringEventTypes.WorkflowStarted, new WorkflowEventPayload
+            {
+                RunId = runId,
+                WorkflowName = request.WorkflowName,
+                Status = "Queued"
+            });
 
             // Build callback URL for AgentHost to call back to Gateway
             var callbackBaseUrl = gatewayOptions.Value.CallbackBaseUrl;
@@ -219,6 +229,14 @@ internal static class WorkflowHttpApi
 
                 // Update workflow status to failed
                 await grain.AbortAsync($"Dispatch failed: {result.ErrorMessage}", ct);
+
+                // Publish workflow failed event
+                eventBroadcaster.PublishWorkflowEvent(MonitoringEventTypes.WorkflowFailed, new WorkflowEventPayload
+                {
+                    RunId = runId,
+                    WorkflowName = request.WorkflowName,
+                    Status = "Aborted"
+                });
 
                 return Results.Problem(
                     title: "Workflow dispatch failed",
@@ -498,13 +516,41 @@ internal static class WorkflowHttpApi
         WorkflowRunStatusUpdate update,
         [FromHeader(Name = IfMatchHeader)] string? etag,
         IGrainFactory grainFactory,
+        IMonitoringEventBroadcaster eventBroadcaster,
         CancellationToken ct)
     {
         var grain = grainFactory.GetGrain<IWorkflowGrain>(runId);
 
         try
         {
+            // Get current workflow info for event payload
+            var currentRun = await grain.GetAsync(ct);
+            var workflowName = currentRun?.WorkflowName ?? "Unknown";
+
             var newETag = await grain.UpdateStatusAsync(update, etag, ct);
+
+            // Publish appropriate monitoring event based on status
+            var eventType = update.Status switch
+            {
+                WorkflowRunStatus.Running => MonitoringEventTypes.WorkflowStarted,
+                WorkflowRunStatus.Completed => MonitoringEventTypes.WorkflowCompleted,
+                WorkflowRunStatus.Failed => MonitoringEventTypes.WorkflowFailed,
+                WorkflowRunStatus.Cancelled => MonitoringEventTypes.WorkflowCancelled,
+                WorkflowRunStatus.Aborted => MonitoringEventTypes.WorkflowAborted,
+                WorkflowRunStatus.WaitingForSignal => MonitoringEventTypes.WorkflowWaitingForSignal,
+                _ => null
+            };
+
+            if (eventType is not null)
+            {
+                eventBroadcaster.PublishWorkflowEvent(eventType, new WorkflowEventPayload
+                {
+                    RunId = runId,
+                    WorkflowName = workflowName,
+                    Status = update.Status.ToString()
+                });
+            }
+
             return Results.Ok(new ETagResponse { ETag = newETag });
         }
         catch (WorkflowNotFoundException)
@@ -528,13 +574,27 @@ internal static class WorkflowHttpApi
         WorkflowStepStartedRecord step,
         [FromHeader(Name = IfMatchHeader)] string? etag,
         IGrainFactory grainFactory,
+        IMonitoringEventBroadcaster eventBroadcaster,
         CancellationToken ct)
     {
         var grain = grainFactory.GetGrain<IWorkflowGrain>(runId);
 
         try
         {
+            // Get workflow info for event payload
+            var currentRun = await grain.GetAsync(ct);
+            var workflowName = currentRun?.WorkflowName ?? "Unknown";
+
             var newETag = await grain.RecordStepStartedAsync(step, etag, ct);
+
+            // Publish step started event
+            eventBroadcaster.PublishWorkflowEvent(MonitoringEventTypes.WorkflowStepStarted, new WorkflowEventPayload
+            {
+                RunId = runId,
+                WorkflowName = workflowName,
+                StepName = step.ExecutorName ?? step.ExecutorId
+            });
+
             return Results.Ok(new ETagResponse { ETag = newETag });
         }
         catch (WorkflowNotFoundException)
@@ -558,13 +618,27 @@ internal static class WorkflowHttpApi
         WorkflowStepCompletedRecord step,
         [FromHeader(Name = IfMatchHeader)] string? etag,
         IGrainFactory grainFactory,
+        IMonitoringEventBroadcaster eventBroadcaster,
         CancellationToken ct)
     {
         var grain = grainFactory.GetGrain<IWorkflowGrain>(runId);
 
         try
         {
+            // Get workflow info for event payload
+            var currentRun = await grain.GetAsync(ct);
+            var workflowName = currentRun?.WorkflowName ?? "Unknown";
+
             var newETag = await grain.RecordStepCompletedAsync(step, etag, ct);
+
+            // Publish step completed event
+            eventBroadcaster.PublishWorkflowEvent(MonitoringEventTypes.WorkflowStepCompleted, new WorkflowEventPayload
+            {
+                RunId = runId,
+                WorkflowName = workflowName,
+                StepName = step.StepId
+            });
+
             return Results.Ok(new ETagResponse { ETag = newETag });
         }
         catch (WorkflowNotFoundException)
@@ -588,13 +662,27 @@ internal static class WorkflowHttpApi
         PendingExternalRequest request,
         [FromHeader(Name = IfMatchHeader)] string? etag,
         IGrainFactory grainFactory,
+        IMonitoringEventBroadcaster eventBroadcaster,
         CancellationToken ct)
     {
         var grain = grainFactory.GetGrain<IWorkflowGrain>(runId);
 
         try
         {
+            // Get workflow info for event payload
+            var currentRun = await grain.GetAsync(ct);
+            var workflowName = currentRun?.WorkflowName ?? "Unknown";
+
             var newETag = await grain.RecordPendingRequestAsync(request, etag, ct);
+
+            // Publish signal requested event
+            eventBroadcaster.PublishWorkflowEvent(MonitoringEventTypes.WorkflowWaitingForSignal, new WorkflowEventPayload
+            {
+                RunId = runId,
+                WorkflowName = workflowName,
+                Status = "WaitingForSignal"
+            });
+
             return Results.Ok(new ETagResponse { ETag = newETag });
         }
         catch (WorkflowNotFoundException)
