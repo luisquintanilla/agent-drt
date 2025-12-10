@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -33,45 +33,41 @@ internal sealed class WorkerRegistryEntityProvider : IEntityProvider
     /// <inheritdoc/>
     public async IAsyncEnumerable<EntityInfo> GetEntitiesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        // Discover agents from all workers
-        var allAgents = new Dictionary<string, EntityInfo>(StringComparer.OrdinalIgnoreCase);
+        // Discover all entities (agents and workflows) from all workers
+        var allEntities = new Dictionary<string, EntityInfo>(StringComparer.OrdinalIgnoreCase);
         foreach (var worker in this._registry.ActiveWorkers.Where(w => w.DiscoveryPath is not null))
         {
-            IReadOnlyDictionary<string, EntityInfo>? supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken).ConfigureAwait(false);
-            if (supportedAgents is not null)
+            IReadOnlyDictionary<string, EntityInfo>? entities = await this._cache.DiscoverEntitiesAsync(worker, cancellationToken).ConfigureAwait(false);
+            if (entities is not null)
             {
-                foreach (var (agentName, agentInfo) in supportedAgents)
+                foreach (var (entityName, entityInfo) in entities)
                 {
-                    if (!allAgents.ContainsKey(agentName))
+                    if (!allEntities.ContainsKey(entityName))
                     {
-                        allAgents[agentName] = agentInfo;
+                        allEntities[entityName] = entityInfo;
                     }
                 }
             }
         }
 
-        foreach (var agentInfo in allAgents.Values)
+        foreach (var entityInfo in allEntities.Values)
         {
-            yield return agentInfo;
+            yield return entityInfo;
         }
-
-        // TODO: Add workflow discovery when workflow support is implemented
     }
 
     /// <inheritdoc/>
     public async Task<EntityInfo?> GetEntityAsync(string entityId, CancellationToken cancellationToken = default)
     {
-        // Try to find the entity among discovered agents
+        // Try to find the entity among discovered entities from all workers
         foreach (var worker in this._registry.ActiveWorkers.Where(w => w.DiscoveryPath is not null))
         {
-            var supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken).ConfigureAwait(false);
-            if (supportedAgents is not null && supportedAgents.TryGetValue(entityId, out var agentInfo))
+            var entities = await this._cache.DiscoverEntitiesAsync(worker, cancellationToken).ConfigureAwait(false);
+            if (entities is not null && entities.TryGetValue(entityId, out var entityInfo))
             {
-                return agentInfo;
+                return entityInfo;
             }
         }
-
-        // TODO: Check workflows when workflow support is implemented
 
         return null;
     }

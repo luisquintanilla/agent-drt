@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Concurrent;
@@ -57,11 +57,11 @@ internal sealed partial class WorkerDiscoveryCache
     /// <summary>
     /// Stores a successful discovery result in the cache.
     /// </summary>
-    public void Set(string workerId, IReadOnlyDictionary<string, EntityInfo> supportedAgents)
+    public void Set(string workerId, IReadOnlyDictionary<string, EntityInfo> entities)
     {
         this._cache[workerId] = new CachedDiscoveryResult(
             workerId,
-            supportedAgents,
+            entities,
             DateTimeOffset.UtcNow);
     }
 
@@ -101,16 +101,16 @@ internal sealed partial class WorkerDiscoveryCache
     }
 
     /// <summary>
-    /// Discovers which agents a worker supports, using the cache if available.
-    /// Returns a dictionary of supported agents keyed by agent name, or null if discovery fails.
+    /// Discovers which entities (agents and workflows) a worker supports, using the cache if available.
+    /// Returns a dictionary of supported entities keyed by entity name, or null if discovery fails.
     /// </summary>
-    public async ValueTask<IReadOnlyDictionary<string, EntityInfo>?> DiscoverAgentsAsync(WorkerRegistry.WorkerInfo worker, CancellationToken cancellationToken = default)
+    public async ValueTask<IReadOnlyDictionary<string, EntityInfo>?> DiscoverEntitiesAsync(WorkerRegistry.WorkerInfo worker, CancellationToken cancellationToken = default)
     {
         // Check cache first
         var cached = this.TryGet(worker.Id);
         if (cached is not null)
         {
-            return cached.SupportedAgents;
+            return cached.Entities;
         }
 
         // Cache miss - perform discovery
@@ -122,22 +122,22 @@ internal sealed partial class WorkerDiscoveryCache
                 AgentGatewayJsonContext.Default.DiscoveryResponse,
                 cancellationToken);
 
-            if (discoveryResponse?.Entities is { Count: > 0 } agents)
+            if (discoveryResponse?.Entities is { Count: > 0 } entities)
             {
                 // Cache the successful discovery result as a dictionary
-                var agentDict = agents
-                    .Where(agent => !string.IsNullOrEmpty(agent.Name))
-                    .ToDictionary(agent => agent.Name, agent => agent, StringComparer.OrdinalIgnoreCase);
-                this.Set(worker.Id, agentDict);
-                return agentDict;
+                var entityDict = entities
+                    .Where(entity => !string.IsNullOrEmpty(entity.Name))
+                    .ToDictionary(entity => entity.Name, entity => entity, StringComparer.OrdinalIgnoreCase);
+                this.Set(worker.Id, entityDict);
+                return entityDict;
             }
 
             if (discoveryResponse is not null)
             {
                 // Cache an empty dictionary to avoid repeated calls when worker reports no entities
-                var emptyAgents = new Dictionary<string, EntityInfo>(StringComparer.OrdinalIgnoreCase);
-                this.Set(worker.Id, emptyAgents);
-                return emptyAgents;
+                var emptyEntities = new Dictionary<string, EntityInfo>(StringComparer.OrdinalIgnoreCase);
+                this.Set(worker.Id, emptyEntities);
+                return emptyEntities;
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -154,6 +154,6 @@ internal sealed partial class WorkerDiscoveryCache
 
     public sealed record CachedDiscoveryResult(
         string WorkerId,
-        IReadOnlyDictionary<string, EntityInfo> SupportedAgents,
+        IReadOnlyDictionary<string, EntityInfo> Entities,
         DateTimeOffset Timestamp);
 }

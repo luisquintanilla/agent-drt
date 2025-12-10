@@ -89,4 +89,14 @@ internal interface IWorkflowGrain : IGrainWithStringKey
     /// Gets the current ETag.
     /// </summary>
     Task<string?> GetETagAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets the ID of the worker assigned to execute this workflow.
+    /// </summary>
+    Task<string?> GetAssignedWorkerIdAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Assigns a worker to execute this workflow.
+    /// </summary>
+    Task SetAssignedWorkerIdAsync(string workerId, CancellationToken cancellationToken);
 }

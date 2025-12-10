@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.Collections.Generic;
 
@@ -27,6 +27,14 @@ public sealed class AgentGatewayOptions
     /// Default is true.
     /// </summary>
     public bool EnableRuntimeRegistration { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets the base URL that workers should use to call back to the Gateway.
+    /// This is used by workflows to report state updates.
+    /// If not set, it will be inferred from the incoming request context.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "String required for JSON configuration binding")]
+    public string? CallbackBaseUrl { get; set; }
 }
 
 /// <summary>

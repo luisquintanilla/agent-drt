@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -36,10 +36,10 @@ internal class AgentGatewayHealthCheck : IHealthCheck
             foreach (var worker in this._registry.ActiveWorkers.Where(w => w.DiscoveryPath is not null))
             {
                 workerCount++;
-                var supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken);
-                if (supportedAgents is not null)
+                var entities = await this._cache.DiscoverEntitiesAsync(worker, cancellationToken);
+                if (entities is not null)
                 {
-                    entitiesCount += supportedAgents.Count;
+                    entitiesCount += entities.Count;
                 }
             }
 

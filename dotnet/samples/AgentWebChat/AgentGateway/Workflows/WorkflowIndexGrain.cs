@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -44,32 +44,32 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
         [PersistentState("workflowIndex", "Default")] IPersistentState<WorkflowIndexState> state,
         ILogger<WorkflowIndexGrain> logger)
     {
-        _state = state;
-        _logger = logger;
+        this._state = state;
+        this._logger = logger;
     }
 
     public async Task RegisterAsync(WorkflowRunSummary summary, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(summary);
 
-        _state.State.Runs[summary.Id] = summary;
+        this._state.State.Runs[summary.Id] = summary;
 
         // Insert at the beginning (newest first)
-        _state.State.OrderedRunIds.Insert(0, summary.Id);
+        this._state.State.OrderedRunIds.Insert(0, summary.Id);
 
-        await _state.WriteStateAsync(cancellationToken);
-        _logger.LogDebug("Registered workflow {RunId} in index", summary.Id);
+        await this._state.WriteStateAsync(cancellationToken);
+        this._logger.LogDebug("Registered workflow {RunId} in index", summary.Id);
     }
 
     public async Task UpdateAsync(string runId, WorkflowRunStatus status, int pendingRequestCount, CancellationToken cancellationToken)
     {
-        if (!_state.State.Runs.TryGetValue(runId, out var existing))
+        if (!this._state.State.Runs.TryGetValue(runId, out var existing))
         {
-            _logger.LogWarning("Attempted to update non-existent workflow {RunId} in index", runId);
+            this._logger.LogWarning("Attempted to update non-existent workflow {RunId} in index", runId);
             return;
         }
 
-        _state.State.Runs[runId] = new WorkflowRunSummary
+        this._state.State.Runs[runId] = new WorkflowRunSummary
         {
             Id = existing.Id,
             WorkflowName = existing.WorkflowName,
@@ -82,8 +82,8 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
             ETag = existing.ETag
         };
 
-        await _state.WriteStateAsync(cancellationToken);
-        _logger.LogDebug("Updated workflow {RunId} status to {Status} in index", runId, status);
+        await this._state.WriteStateAsync(cancellationToken);
+        this._logger.LogDebug("Updated workflow {RunId} status to {Status} in index", runId, status);
     }
 
     public Task<WorkflowListResponse<WorkflowRunSummary>> ListAsync(
@@ -93,12 +93,12 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
         string? before,
         CancellationToken cancellationToken)
     {
-        var query = _state.State.OrderedRunIds.AsEnumerable();
+        var query = this._state.State.OrderedRunIds.AsEnumerable();
 
         // Apply cursor-based pagination
         if (!string.IsNullOrEmpty(after))
         {
-            var afterIndex = _state.State.OrderedRunIds.IndexOf(after);
+            var afterIndex = this._state.State.OrderedRunIds.IndexOf(after);
             if (afterIndex >= 0)
             {
                 query = query.Skip(afterIndex + 1);
@@ -107,7 +107,7 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
 
         if (!string.IsNullOrEmpty(before))
         {
-            var beforeIndex = _state.State.OrderedRunIds.IndexOf(before);
+            var beforeIndex = this._state.State.OrderedRunIds.IndexOf(before);
             if (beforeIndex >= 0)
             {
                 query = query.Take(beforeIndex);
@@ -116,7 +116,7 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
 
         // Get summaries and apply status filter
         var summaries = query
-            .Select(id => _state.State.Runs.GetValueOrDefault(id))
+            .Select(id => this._state.State.Runs.GetValueOrDefault(id))
             .Where(s => s is not null)
             .Cast<WorkflowRunSummary>();
 
@@ -146,17 +146,17 @@ internal sealed class WorkflowIndexGrain : Grain, IWorkflowIndexGrain
 
     public Task<WorkflowRunSummary?> GetAsync(string runId, CancellationToken cancellationToken)
     {
-        _state.State.Runs.TryGetValue(runId, out var summary);
+        this._state.State.Runs.TryGetValue(runId, out var summary);
         return Task.FromResult(summary);
     }
 
     public async Task RemoveAsync(string runId, CancellationToken cancellationToken)
     {
-        if (_state.State.Runs.Remove(runId))
+        if (this._state.State.Runs.Remove(runId))
         {
-            _state.State.OrderedRunIds.Remove(runId);
-            await _state.WriteStateAsync(cancellationToken);
-            _logger.LogDebug("Removed workflow {RunId} from index", runId);
+            this._state.State.OrderedRunIds.Remove(runId);
+            await this._state.WriteStateAsync(cancellationToken);
+            this._logger.LogDebug("Removed workflow {RunId} from index", runId);
         }
     }
 }

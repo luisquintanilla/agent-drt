@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 
 namespace AgentGateway.Workflows;
@@ -166,6 +167,9 @@ internal static class WorkflowHttpApi
     private static async Task<IResult> StartWorkflowAsync(
         StartWorkflowRequest request,
         IGrainFactory grainFactory,
+        IWorkflowExecutor workflowExecutor,
+        IOptions<AgentGatewayOptions> gatewayOptions,
+        HttpContext httpContext,
         ILogger<Program> logger,
         CancellationToken ct)
     {
@@ -174,8 +178,53 @@ internal static class WorkflowHttpApi
 
         try
         {
+            // Create the workflow run in the grain
             var run = await grain.StartAsync(request, ct);
             logger.LogInformation("Workflow started: {RunId} (workflow: {WorkflowName})", runId, request.WorkflowName);
+
+            // Build callback URL for AgentHost to call back to Gateway
+            var callbackBaseUrl = gatewayOptions.Value.CallbackBaseUrl;
+            if (string.IsNullOrEmpty(callbackBaseUrl))
+            {
+                // Infer from request context
+                var scheme = httpContext.Request.Scheme;
+                var host = httpContext.Request.Host.ToString();
+                callbackBaseUrl = $"{scheme}://{host}";
+            }
+
+            // Dispatch execution to a worker
+            var executionRequest = new WorkflowExecutionRequest
+            {
+                RunId = runId,
+                WorkflowName = request.WorkflowName,
+                Input = request.Input,
+                CallbackBaseUrl = callbackBaseUrl,
+                Options = request.Options
+            };
+
+            // Dispatch and await the result - the executor streams SSE events but we just need acknowledgment
+            var result = await workflowExecutor.ExecuteAsync(executionRequest, preferredWorkerId: null, ct);
+            if (!result.Success)
+            {
+                logger.LogError(
+                    "Workflow execution dispatch failed: {RunId}, Error: {ErrorCode} - {ErrorMessage}",
+                    runId, result.ErrorCode, result.ErrorMessage);
+
+                // Update workflow status to failed
+                await grain.AbortAsync($"Dispatch failed: {result.ErrorMessage}", ct);
+
+                return Results.Problem(
+                    title: "Workflow dispatch failed",
+                    detail: result.ErrorMessage,
+                    statusCode: StatusCodes.Status502BadGateway);
+            }
+
+            // Persist the assigned worker for future resume requests
+            if (!string.IsNullOrEmpty(result.WorkerId))
+            {
+                await grain.SetAssignedWorkerIdAsync(result.WorkerId, ct);
+            }
+
             return Results.Created($"/v1/workflows/{runId}", run);
         }
         catch (Exception ex)
@@ -252,6 +301,9 @@ internal static class WorkflowHttpApi
         string runId,
         WorkflowSignal signal,
         IGrainFactory grainFactory,
+        IWorkflowExecutor workflowExecutor,
+        IOptions<AgentGatewayOptions> gatewayOptions,
+        HttpContext httpContext,
         ILogger<Program> logger,
         CancellationToken ct)
     {
@@ -259,8 +311,60 @@ internal static class WorkflowHttpApi
 
         try
         {
+            // Get current workflow state for resume context
+            var currentRun = await grain.GetAsync(ct);
+            if (currentRun is null)
+            {
+                return Results.Problem(
+                    title: "Workflow not found",
+                    detail: $"Workflow '{runId}' not found.",
+                    statusCode: StatusCodes.Status404NotFound);
+            }
+
+            // Record the signal in the grain
             var run = await grain.SendSignalAsync(signal, ct);
             logger.LogInformation("Signal sent to workflow {RunId}: request {RequestId}", runId, signal.RequestId);
+
+            // Build callback URL
+            var callbackBaseUrl = gatewayOptions.Value.CallbackBaseUrl;
+            if (string.IsNullOrEmpty(callbackBaseUrl))
+            {
+                var scheme = httpContext.Request.Scheme;
+                var host = httpContext.Request.Host.ToString();
+                callbackBaseUrl = $"{scheme}://{host}";
+            }
+
+            // Get checkpoint data and assigned worker for resume
+            var checkpointResult = await grain.GetCheckpointAsync(ct);
+            var assignedWorkerId = await grain.GetAssignedWorkerIdAsync(ct);
+
+            // Dispatch resume to a worker
+            var resumeRequest = new WorkflowResumeRequest
+            {
+                RunId = runId,
+                WorkflowName = currentRun.WorkflowName,
+                CallbackBaseUrl = callbackBaseUrl,
+                Signal = signal,
+                CheckpointData = checkpointResult?.Checkpoint.Data
+            };
+
+            // Dispatch and await the result
+            var result = await workflowExecutor.ResumeAsync(resumeRequest, assignedWorkerId, ct);
+            if (!result.Success)
+            {
+                logger.LogError(
+                    "Workflow resume dispatch failed: {RunId}, Error: {ErrorCode} - {ErrorMessage}",
+                    runId, result.ErrorCode, result.ErrorMessage);
+
+                // Update workflow status to failed
+                await grain.AbortAsync($"Resume dispatch failed: {result.ErrorMessage}", ct);
+
+                return Results.Problem(
+                    title: "Workflow resume failed",
+                    detail: result.ErrorMessage,
+                    statusCode: StatusCodes.Status502BadGateway);
+            }
+
             return Results.Ok(run);
         }
         catch (WorkflowNotFoundException)

@@ -41,12 +41,14 @@ public sealed class WorkflowHttpApiIntegrationTests : IAsyncDisposable
 
         // Configure System.Text.Json serialization for Orleans grain method parameters
         // This is required for types like StartWorkflowRequest, WorkflowSignal, etc.
+        // NOTE: Exceptions are excluded to allow Orleans to use its built-in exception serialization
         builder.Services.AddSerializer(serializerBuilder =>
         {
             serializerBuilder.AddJsonSerializer(
-                isSupported: type => type.Namespace?.StartsWith("Microsoft.Agents", StringComparison.Ordinal) == true ||
-                                    type.Namespace?.StartsWith("AgentContracts", StringComparison.Ordinal) == true ||
-                                    type.Namespace?.StartsWith("AgentGateway", StringComparison.Ordinal) == true,
+                isSupported: type => !typeof(Exception).IsAssignableFrom(type) &&
+                                    (type.Namespace?.StartsWith("Microsoft.Agents", StringComparison.Ordinal) == true ||
+                                     type.Namespace?.StartsWith("AgentContracts", StringComparison.Ordinal) == true ||
+                                     type.Namespace?.StartsWith("AgentGateway", StringComparison.Ordinal) == true),
                 jsonSerializerOptions: AgentGatewayJsonUtilities.DefaultOptions);
         });
 

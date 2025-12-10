@@ -1,6 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using AgentContracts.Workflows;
 using Orleans;
@@ -45,9 +44,16 @@ internal sealed class WorkflowGrainState
     public bool CancellationRequested { get; set; }
 
     /// <summary>
+    /// The ID of the worker assigned to execute this workflow.
+    /// Used to route resume requests to the same worker for state consistency.
+    /// </summary>
+    [Id(5)]
+    public string? AssignedWorkerId { get; set; }
+
+    /// <summary>
     /// Gets the ETag as an opaque string (hex-encoded version number).
     /// </summary>
-    public string GetETag() => Version.ToString("x16");
+    public string GetETag() => this.Version.ToString("x16");
 
     /// <summary>
     /// Validates the expected ETag and increments the version.
@@ -57,11 +63,11 @@ internal sealed class WorkflowGrainState
     /// <exception cref="WorkflowConcurrencyException">Thrown if ETag doesn't match.</exception>
     public void IncrementVersion(string? expectedETag, string runId)
     {
-        if (expectedETag != null && expectedETag != GetETag())
+        if (expectedETag != null && expectedETag != this.GetETag())
         {
-            throw new WorkflowConcurrencyException(runId, expectedETag, GetETag());
+            throw new WorkflowConcurrencyException(runId, expectedETag, this.GetETag());
         }
 
-        Version++;
+        this.Version++;
     }
 }

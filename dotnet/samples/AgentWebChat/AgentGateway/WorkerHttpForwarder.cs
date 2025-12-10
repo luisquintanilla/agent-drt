@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -68,8 +68,8 @@ internal sealed class WorkerHttpForwarder
         // Query each non-default worker's discovery endpoint first to find one that supports the specific agent
         foreach (var worker in this._registry.ActiveWorkers.Where(w => w.Id != WorkerRegistry.DefaultWorkerId && w.DiscoveryPath is not null))
         {
-            var supportedAgents = await this._cache.DiscoverAgentsAsync(worker, cancellationToken);
-            if (supportedAgents?.ContainsKey(agentName) == true)
+            var entities = await this._cache.DiscoverEntitiesAsync(worker, cancellationToken);
+            if (entities?.ContainsKey(agentName) == true)
             {
                 return worker;
             }

@@ -77,7 +77,7 @@ class WorkflowApiClient {
 
   async sendSignal(runId: string, signal: WorkflowSignal): Promise<WorkflowRun> {
     return this.request<WorkflowRun>(
-      `${BASE_URL}/${encodeURIComponent(runId)}/signal`,
+      `${BASE_URL}/${encodeURIComponent(runId)}/signals`,
       {
         method: 'POST',
         body: JSON.stringify(signal),

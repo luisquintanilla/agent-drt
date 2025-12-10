@@ -1,5 +1,3 @@
-// Copyright (c) Microsoft. All rights reserved.
-
 using System;
 using System.Net.Http;
 using AgentContracts;
@@ -146,6 +144,10 @@ builder.Services.AddSingleton<WorkerHttpForwarder>();
 
 // Register entity provider for DevUI entities API
 builder.Services.AddSingleton<IEntityProvider, WorkerRegistryEntityProvider>();
+
+// Register workflow executor for dispatching to workers
+builder.Services.AddSingleton<IWorkflowExecutor, WorkerWorkflowExecutor>();
+
 builder.AddOpenAIResponses();
 
 var app = builder.Build();

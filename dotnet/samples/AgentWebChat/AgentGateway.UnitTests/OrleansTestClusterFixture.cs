@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
@@ -148,10 +148,12 @@ public sealed class OrleansTestClusterFixture : IAsyncLifetime
                 // - OpenAI Hosting types (Conversation, ItemResource, Response, etc.)
                 // - Microsoft.Extensions.AI types (AIContent, ChatMessage, etc.)
                 // - AgentContracts types (via AgentContractsJsonUtilities)
+                // NOTE: Exceptions are excluded to allow Orleans to use its built-in exception serialization
                 serializerBuilder.AddJsonSerializer(
-                    isSupported: type => type.Namespace?.StartsWith("Microsoft.Agents", StringComparison.Ordinal) == true ||
-                                        type.Namespace?.StartsWith("AgentContracts", StringComparison.Ordinal) == true ||
-                                        type.Namespace?.StartsWith("AgentGateway", StringComparison.Ordinal) == true,
+                    isSupported: type => !typeof(Exception).IsAssignableFrom(type) &&
+                                        (type.Namespace?.StartsWith("Microsoft.Agents", StringComparison.Ordinal) == true ||
+                                         type.Namespace?.StartsWith("AgentContracts", StringComparison.Ordinal) == true ||
+                                         type.Namespace?.StartsWith("AgentGateway", StringComparison.Ordinal) == true),
                     jsonSerializerOptions: AgentGatewayJsonUtilities.DefaultOptions);
             });
         })

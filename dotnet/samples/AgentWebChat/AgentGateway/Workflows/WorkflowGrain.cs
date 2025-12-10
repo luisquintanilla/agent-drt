@@ -109,17 +109,17 @@ internal sealed class WorkflowGrain(
 
         logger.LogInformation("Workflow '{RunId}' started with workflow name '{WorkflowName}'", this.RunId, request.WorkflowName);
 
-        return GetRunWithETag();
+        return this.GetRunWithETag();
     }
 
     public Task<WorkflowRun?> GetAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult(workflowState.State.Run is not null ? GetRunWithETag() : null);
+        return Task.FromResult(workflowState.State.Run is not null ? this.GetRunWithETag() : null);
     }
 
     public async Task<WorkflowRun> SendSignalAsync(WorkflowSignal signal, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         var pendingRequest = workflowState.State.Run!.PendingRequests.FirstOrDefault(r => r.RequestId == signal.RequestId);
         if (pendingRequest is null)
@@ -152,12 +152,12 @@ internal sealed class WorkflowGrain(
 
         logger.LogInformation("Workflow '{RunId}' received signal for request '{RequestId}'", this.RunId, signal.RequestId);
 
-        return GetRunWithETag();
+        return this.GetRunWithETag();
     }
 
     public async Task<WorkflowRun> CancelAsync(CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         if (IsTerminalStatus(workflowState.State.Run!.Status))
         {
@@ -177,12 +177,12 @@ internal sealed class WorkflowGrain(
 
         logger.LogInformation("Workflow '{RunId}' cancellation requested", this.RunId);
 
-        return GetRunWithETag();
+        return this.GetRunWithETag();
     }
 
     public async Task<WorkflowRun> AbortAsync(string reason, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         if (IsTerminalStatus(workflowState.State.Run!.Status))
         {
@@ -209,12 +209,12 @@ internal sealed class WorkflowGrain(
 
         workflowState.State.IncrementVersion(null, this.RunId);
         await workflowState.WriteStateAsync(cancellationToken);
-        await UnregisterReminderIfExists();
+        await this.UnregisterReminderIfExistsAsync();
         this._stateUpdatedEvent.SignalAndReset();
 
         logger.LogWarning("Workflow '{RunId}' aborted: {Reason}", this.RunId, reason);
 
-        return GetRunWithETag();
+        return this.GetRunWithETag();
     }
 
     public async IAsyncEnumerable<WorkflowStatusEvent> StreamEventsAsync(
@@ -254,7 +254,7 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> UpdateStatusAsync(WorkflowRunStatusUpdate update, string? etag, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         var now = DateTimeOffset.UtcNow;
         workflowState.State.Run = workflowState.State.Run! with
@@ -274,7 +274,7 @@ internal sealed class WorkflowGrain(
 
         if (IsTerminalStatus(update.Status))
         {
-            await UnregisterReminderIfExists();
+            await this.UnregisterReminderIfExistsAsync();
         }
 
         this._stateUpdatedEvent.SignalAndReset();
@@ -286,7 +286,7 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> RecordStepStartedAsync(WorkflowStepStartedRecord step, string? etag, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         var stepInfo = new WorkflowStepInfo
         {
@@ -321,7 +321,7 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> RecordStepCompletedAsync(WorkflowStepCompletedRecord step, string? etag, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         // Find and update the step
         var steps = workflowState.State.Run!.Steps.ToList();
@@ -361,7 +361,7 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> RecordPendingRequestAsync(PendingExternalRequest request, string? etag, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         workflowState.State.Run = workflowState.State.Run! with
         {
@@ -396,7 +396,7 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> ClearPendingRequestAsync(string requestId, string? etag, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         workflowState.State.Run = workflowState.State.Run! with
         {
@@ -413,7 +413,7 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> SaveCheckpointAsync(WorkflowCheckpointData checkpoint, string? etag, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         workflowState.State.Checkpoint = checkpoint;
 
@@ -441,7 +441,7 @@ internal sealed class WorkflowGrain(
 
     public async Task<string> RecordArtifactAsync(WorkflowArtifactRecord artifact, string? etag, CancellationToken cancellationToken)
     {
-        EnsureRunExists();
+        this.EnsureRunExists();
 
         workflowState.State.Run = workflowState.State.Run! with
         {
@@ -470,7 +470,19 @@ internal sealed class WorkflowGrain(
 
     public Task<string?> GetETagAsync(CancellationToken cancellationToken)
     {
-        return Task.FromResult<string?>(workflowState.State.Run is not null ? workflowState.State.GetETag() : null);
+        return Task.FromResult(workflowState.State.Run is not null ? workflowState.State.GetETag() : null);
+    }
+
+    public Task<string?> GetAssignedWorkerIdAsync(CancellationToken cancellationToken)
+    {
+        return Task.FromResult(workflowState.State.AssignedWorkerId);
+    }
+
+    public async Task SetAssignedWorkerIdAsync(string workerId, CancellationToken cancellationToken)
+    {
+        workflowState.State.AssignedWorkerId = workerId;
+        await workflowState.WriteStateAsync(cancellationToken);
+        logger.LogDebug("Workflow '{RunId}' assigned to worker '{WorkerId}'", this.RunId, workerId);
     }
 
     // ============ IRemindable ============
@@ -484,7 +496,7 @@ internal sealed class WorkflowGrain(
             // If workflow is in terminal state, unregister the reminder
             if (workflowState.State.Run is { } run && IsTerminalStatus(run.Status))
             {
-                await UnregisterReminderIfExists();
+                await this.UnregisterReminderIfExistsAsync();
             }
             // Otherwise the reminder ensures the grain stays active for potential resumption
         }
@@ -514,7 +526,7 @@ internal sealed class WorkflowGrain(
             or WorkflowRunStatus.Failed;
     }
 
-    private async Task UnregisterReminderIfExists()
+    private async Task UnregisterReminderIfExistsAsync()
     {
         try
         {
