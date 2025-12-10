@@ -173,6 +173,9 @@ builder.Services.AddSingleton<WorkflowHostService>(sp =>
     return host;
 });
 
+// Register entity provider for HITL workflows to appear in DevUI
+builder.Services.AddSingleton<IEntityProvider, WorkflowHostEntityProvider>();
+
 var app = builder.Build();
 
 app.MapOpenApi();
