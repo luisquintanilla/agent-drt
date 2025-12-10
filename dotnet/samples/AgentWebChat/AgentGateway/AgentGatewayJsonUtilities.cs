@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AgentGateway.Conversations;
 using AgentGateway.Responses;
+using AgentGateway.Workflows;
 using Microsoft.Agents.AI.Hosting.OpenAI;
 using Microsoft.Agents.AI.DevUI.Entities;
 
@@ -56,5 +57,7 @@ public static class AgentGatewayJsonUtilities
 [JsonSerializable(typeof(AgentConversationIndexState))]
 [JsonSerializable(typeof(DiscoveryResponse))]
 [JsonSerializable(typeof(List<EntityInfo>))]
+[JsonSerializable(typeof(WorkflowGrainState))]
+[JsonSerializable(typeof(ETagResponse))]
 [ExcludeFromCodeCoverage]
 internal sealed partial class AgentGatewayJsonContext : JsonSerializerContext;

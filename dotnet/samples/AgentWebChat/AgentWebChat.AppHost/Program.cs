@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using AgentWebChat.AppHost;
 
@@ -33,6 +33,13 @@ var agentHost = builder.AddProject<Projects.AgentWebChat_AgentHost>("agenthost")
 builder.AddProject<Projects.AgentWebChat_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(gateway)
+    .WaitFor(gateway);
+
+// MarketR React frontend for workflow management
+builder.AddNpmApp("marketr", "../MarketR", "dev")
+    .WithReference(gateway)
+    .WithHttpEndpoint(port: 5173, env: "PORT")
+    .WithExternalHttpEndpoints()
     .WaitFor(gateway);
 
 builder.Build().Run();

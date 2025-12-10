@@ -1,6 +1,15 @@
 @inherits LayoutComponentBase
 
 <div class="page">
+    <header class="nav-header">
+        <nav class="nav-container">
+            <a href="/" class="nav-brand">Agent Web Chat</a>
+            <div class="nav-links">
+                <a href="/" class="nav-link">Chat</a>
+                <a href="/workflows" class="nav-link">Workflows</a>
+            </div>
+        </nav>
+    </header>
     <main>
         <article class="content">
             @Body
@@ -11,5 +20,5 @@
 <div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+    <a class="dismiss">X</a>
 </div>

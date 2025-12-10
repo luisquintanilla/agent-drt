@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using AgentWebChat.Web;
 using AgentWebChat.Web.Components;
@@ -18,6 +18,7 @@ builder.Services.AddHttpClient<AgentDiscoveryClient>(client => client.BaseAddres
 builder.Services.AddHttpClient<A2AAgentClient>(client => client.BaseAddress = new Uri("https+http://gateway/a2a"));
 builder.Services.AddHttpClient<OpenAIResponsesAgentClient>(client => client.BaseAddress = new Uri("https+http://gateway"));
 builder.Services.AddHttpClient<OpenAIChatCompletionsAgentClient>(client => client.BaseAddress = new Uri("https+http://gateway"));
+builder.Services.AddHttpClient<WorkflowApiClient>(client => client.BaseAddress = new Uri("https+http://gateway"));
 
 var app = builder.Build();
 

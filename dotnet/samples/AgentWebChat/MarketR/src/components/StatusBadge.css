@@ -1,0 +1,56 @@
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.size-small {
+  font-size: 0.75rem;
+}
+
+.status-badge.size-large {
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
+
+.status-queued {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.status-running {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-waiting {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-cancelling {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-cancelled {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.status-aborted {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}

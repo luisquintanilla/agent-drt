@@ -1,0 +1,1249 @@
+@page "/workflows"
+@attribute [StreamRendering(true)]
+@inject WorkflowApiClient WorkflowClient
+@inject IJSRuntime JSRuntime
+@inject ILogger<Workflows> Logger
+@rendermode InteractiveServer
+@using System.Text.Json
+@using AgentContracts.Workflows
+
+<PageTitle>Workflows - HITL Demo</PageTitle>
+
+<div class="workflow-container">
+    <div class="workflow-header">
+        <h1 class="workflow-title">
+            <svg class="workflow-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Human-in-the-Loop Workflows
+        </h1>
+        <p class="workflow-subtitle">Create and manage marketing content workflows with human approval</p>
+    </div>
+
+    @* Start New Workflow Section *@
+    <div class="workflow-card start-card">
+        <h2 class="card-title">Start New Marketing Content Workflow</h2>
+        <div class="input-group">
+            <label for="topic">Topic</label>
+            <input id="topic" @bind="newWorkflowTopic" class="text-input" placeholder="e.g., AI-powered customer service" disabled="@isStartingWorkflow" />
+        </div>
+        <div class="input-group">
+            <label for="audience">Target Audience (optional)</label>
+            <input id="audience" @bind="newWorkflowAudience" class="text-input" placeholder="e.g., Enterprise customers" disabled="@isStartingWorkflow" />
+        </div>
+        <button class="primary-btn" @onclick="StartNewWorkflow" disabled="@(isStartingWorkflow || string.IsNullOrWhiteSpace(newWorkflowTopic))">
+            @if (isStartingWorkflow)
+            {
+                <div class="spinner-small"></div>
+                <span>Starting...</span>
+            }
+            else
+            {
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <span>Start Workflow</span>
+            }
+        </button>
+    </div>
+
+    @* Workflow List Section *@
+    <div class="workflow-card list-card">
+        <div class="list-header">
+            <h2 class="card-title">Active Workflows</h2>
+            <button class="secondary-btn" @onclick="RefreshWorkflows" disabled="@isLoadingWorkflows">
+                @if (isLoadingWorkflows)
+                {
+                    <div class="spinner-small"></div>
+                }
+                else
+                {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                }
+                <span>Refresh</span>
+            </button>
+        </div>
+
+        @if (workflows.Count == 0 && !isLoadingWorkflows)
+        {
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                </svg>
+                <p>No workflows yet. Start a new workflow to begin!</p>
+            </div>
+        }
+        else
+        {
+            <div class="workflow-list">
+                @foreach (var workflow in workflows)
+                {
+                    <div class="workflow-item @(selectedWorkflow?.Id == workflow.Id ? "selected" : "") @GetStatusClass(workflow.Status)"
+                         @onclick="() => SelectWorkflow(workflow.Id)">
+                        <div class="workflow-item-header">
+                            <span class="workflow-name">@workflow.WorkflowName</span>
+                            <span class="workflow-status-badge @GetStatusClass(workflow.Status)">@workflow.Status</span>
+                        </div>
+                        <div class="workflow-item-meta">
+                            <span class="workflow-id">ID: @workflow.Id[..Math.Min(8, workflow.Id.Length)]...</span>
+                            <span class="workflow-date">@workflow.CreatedAt.ToLocalTime().ToString("g")</span>
+                        </div>
+                        @if (workflow.PendingRequestCount > 0)
+                        {
+                            <div class="pending-badge">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="16" x2="12" y2="12"/>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                                </svg>
+                                <span>@workflow.PendingRequestCount pending approval(s)</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    @* Selected Workflow Details *@
+    @if (selectedWorkflow != null)
+    {
+        <div class="workflow-card details-card">
+            <div class="details-header">
+                <h2 class="card-title">Workflow Details</h2>
+                <span class="workflow-status-badge large @GetStatusClass(selectedWorkflow.Status)">@selectedWorkflow.Status</span>
+            </div>
+
+            <div class="details-section">
+                <h3>Information</h3>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <label>Workflow ID</label>
+                        <span>@selectedWorkflow.Id</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Workflow Name</label>
+                        <span>@selectedWorkflow.WorkflowName</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Created</label>
+                        <span>@selectedWorkflow.CreatedAt.ToLocalTime().ToString("F")</span>
+                    </div>
+                    @if (selectedWorkflow.CompletedAt.HasValue)
+                    {
+                        <div class="detail-item">
+                            <label>Completed</label>
+                            <span>@selectedWorkflow.CompletedAt.Value.ToLocalTime().ToString("F")</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* Steps Timeline *@
+            @if (selectedWorkflow.Steps.Count > 0)
+            {
+                <div class="details-section">
+                    <h3>Steps</h3>
+                    <div class="steps-timeline">
+                        @foreach (var step in selectedWorkflow.Steps)
+                        {
+                            <div class="step-item @(step.IsCompleted ? "completed" : "in-progress")">
+                                <div class="step-icon">
+                                    @if (step.IsCompleted)
+                                    {
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                    }
+                                    else
+                                    {
+                                        <div class="spinner-small"></div>
+                                    }
+                                </div>
+                                <div class="step-content">
+                                    <div class="step-name">@(step.ExecutorName ?? step.ExecutorId)</div>
+                                    <div class="step-meta">
+                                        <span>Started: @step.StartedAt.ToLocalTime().ToString("T")</span>
+                                        @if (step.DurationMs.HasValue)
+                                        {
+                                            <span>Duration: @(step.DurationMs.Value)ms</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* Pending Approvals *@
+            @if (selectedWorkflow.PendingRequests.Count > 0)
+            {
+                <div class="details-section approval-section">
+                    <h3>Pending Approvals</h3>
+                    @foreach (var request in selectedWorkflow.PendingRequests)
+                    {
+                        <div class="approval-card">
+                            <div class="approval-header">
+                                <h4>@(request.Title ?? "Approval Required")</h4>
+                                <span class="request-id">Request: @request.RequestId[..Math.Min(8, request.RequestId.Length)]...</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(request.Description))
+                            {
+                                <p class="approval-description">@request.Description</p>
+                            }
+                            
+                            @* Display the content to review *@
+                            @{
+                                var approvalRequestData = request.RequestData?.As<ApprovalRequestDto>();
+                            }
+                            @if (approvalRequestData?.Content != null)
+                            {
+                                <div class="content-preview">
+                                    <label>Content to Review:</label>
+                                    <pre class="content-text">@approvalRequestData.Content</pre>
+                                </div>
+                            }
+
+                            <div class="approval-actions">
+                                <div class="feedback-input">
+                                    <label for="feedback-@request.RequestId">Feedback (optional):</label>
+                                    <textarea id="feedback-@request.RequestId" 
+                                              @bind="approvalFeedback" 
+                                              class="text-area"
+                                              placeholder="Add any feedback or notes..."
+                                              disabled="@isSubmittingApproval"></textarea>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="approve-btn" 
+                                            @onclick="@(() => SubmitApproval(request.RequestId, DecisionApprove))"
+                                            disabled="@isSubmittingApproval">
+                                        @if (isSubmittingApproval && submittingRequestId == request.RequestId && submittingDecision == DecisionApprove)
+                                        {
+                                            <div class="spinner-small"></div>
+                                        }
+                                        else
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                        }
+                                        <span>Approve</span>
+                                    </button>
+                                    <button class="revise-btn"
+                                            @onclick="@(() => SubmitApproval(request.RequestId, DecisionRevise))"
+                                            disabled="@isSubmittingApproval">
+                                        @if (isSubmittingApproval && submittingRequestId == request.RequestId && submittingDecision == DecisionRevise)
+                                        {
+                                            <div class="spinner-small"></div>
+                                        }
+                                        else
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                            </svg>
+                                        }
+                                        <span>Request Revision</span>
+                                    </button>
+                                    <button class="reject-btn"
+                                            @onclick="@(() => SubmitApproval(request.RequestId, DecisionReject))"
+                                            disabled="@isSubmittingApproval">
+                                        @if (isSubmittingApproval && submittingRequestId == request.RequestId && submittingDecision == DecisionReject)
+                                        {
+                                            <div class="spinner-small"></div>
+                                        }
+                                        else
+                                        {
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                                <line x1="6" y1="6" x2="18" y2="18"/>
+                                            </svg>
+                                        }
+                                        <span>Reject</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @* Artifacts *@
+            @if (selectedWorkflow.Artifacts.Count > 0)
+            {
+                <div class="details-section">
+                    <h3>Artifacts</h3>
+                    @foreach (var artifact in selectedWorkflow.Artifacts)
+                    {
+                        <div class="artifact-card">
+                            <div class="artifact-header">
+                                <h4>@artifact.Name</h4>
+                                <span class="artifact-type">@artifact.ContentType</span>
+                            </div>
+                            <pre class="artifact-content">@artifact.Content</pre>
+                            @if (artifact.Metadata?.Count > 0)
+                            {
+                                <div class="artifact-metadata">
+                                    @foreach (var (key, value) in artifact.Metadata)
+                                    {
+                                        <span class="metadata-tag">@key: @value</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @* Error Display *@
+            @if (selectedWorkflow.Error != null)
+            {
+                <div class="details-section error-section">
+                    <h3>Error</h3>
+                    <div class="error-display">
+                        <div class="error-code">@selectedWorkflow.Error.Code</div>
+                        <div class="error-message">@selectedWorkflow.Error.Message</div>
+                        @if (!string.IsNullOrEmpty(selectedWorkflow.Error.StackTrace))
+                        {
+                            <pre class="error-stack">@selectedWorkflow.Error.StackTrace</pre>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* Actions *@
+            <div class="details-actions">
+                @if (selectedWorkflow.Status == WorkflowRunStatus.Running || selectedWorkflow.Status == WorkflowRunStatus.WaitingForSignal)
+                {
+                    <button class="danger-btn" @onclick="CancelSelectedWorkflow" disabled="@isCancelling">
+                        @if (isCancelling)
+                        {
+                            <div class="spinner-small"></div>
+                        }
+                        else
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                        }
+                        <span>Cancel Workflow</span>
+                    </button>
+                }
+                <button class="secondary-btn" @onclick="() => selectedWorkflow = null">
+                    <span>Close Details</span>
+                </button>
+            </div>
+        </div>
+    }
+
+    @* Notification Toast *@
+    @if (!string.IsNullOrEmpty(notificationMessage))
+    {
+        <div class="notification-toast @notificationType">
+            <span>@notificationMessage</span>
+            <button class="toast-close" @onclick="() => notificationMessage = null">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    }
+</div>
+
+<style>
+    .workflow-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    }
+
+    .workflow-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .workflow-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .workflow-icon {
+        color: #059669;
+    }
+
+    .workflow-subtitle {
+        color: #6b7280;
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .workflow-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0 0 1rem 0;
+    }
+
+    /* Input Styles */
+    .input-group {
+        margin-bottom: 1rem;
+    }
+
+    .input-group label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .text-input, .text-area {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        transition: all 0.2s;
+        box-sizing: border-box;
+    }
+
+    .text-input:focus, .text-area:focus {
+        outline: none;
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+
+    .text-area {
+        min-height: 80px;
+        resize: vertical;
+    }
+
+    /* Button Styles */
+    .primary-btn, .secondary-btn, .danger-btn, .approve-btn, .revise-btn, .reject-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .primary-btn {
+        background: #059669;
+        color: white;
+    }
+
+    .primary-btn:hover:not(:disabled) {
+        background: #047857;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+
+    .secondary-btn {
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .secondary-btn:hover:not(:disabled) {
+        background: #e5e7eb;
+    }
+
+    .danger-btn {
+        background: #dc2626;
+        color: white;
+    }
+
+    .danger-btn:hover:not(:disabled) {
+        background: #b91c1c;
+    }
+
+    .approve-btn {
+        background: #059669;
+        color: white;
+    }
+
+    .approve-btn:hover:not(:disabled) {
+        background: #047857;
+    }
+
+    .revise-btn {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .revise-btn:hover:not(:disabled) {
+        background: #d97706;
+    }
+
+    .reject-btn {
+        background: #dc2626;
+        color: white;
+    }
+
+    .reject-btn:hover:not(:disabled) {
+        background: #b91c1c;
+    }
+
+    .primary-btn:disabled, .secondary-btn:disabled, .danger-btn:disabled,
+    .approve-btn:disabled, .revise-btn:disabled, .reject-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* List Styles */
+    .list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .list-header .card-title {
+        margin: 0;
+    }
+
+    .workflow-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .workflow-item {
+        padding: 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .workflow-item:hover {
+        border-color: #059669;
+        background: #f9fafb;
+    }
+
+    .workflow-item.selected {
+        border-color: #059669;
+        background: #ecfdf5;
+    }
+
+    .workflow-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .workflow-name {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .workflow-status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .workflow-status-badge.large {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .workflow-status-badge.status-queued { background: #e5e7eb; color: #4b5563; }
+    .workflow-status-badge.status-running { background: #dbeafe; color: #1e40af; }
+    .workflow-status-badge.status-waiting { background: #fef3c7; color: #92400e; }
+    .workflow-status-badge.status-completed { background: #d1fae5; color: #065f46; }
+    .workflow-status-badge.status-cancelled { background: #e5e7eb; color: #4b5563; }
+    .workflow-status-badge.status-aborted { background: #fee2e2; color: #991b1b; }
+    .workflow-status-badge.status-failed { background: #fee2e2; color: #991b1b; }
+
+    .workflow-item-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .pending-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        background: #fef3c7;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        color: #92400e;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #9ca3af;
+    }
+
+    .empty-state svg {
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    /* Details Section */
+    .details-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .details-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .details-section:last-of-type {
+        border-bottom: none;
+    }
+
+    .details-section h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #374151;
+        margin: 0 0 1rem 0;
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .detail-item label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #6b7280;
+    }
+
+    .detail-item span {
+        color: #374151;
+    }
+
+    /* Steps Timeline */
+    .steps-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .step-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem 0;
+        position: relative;
+    }
+
+    .step-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 44px;
+        bottom: 0;
+        width: 2px;
+        background: #e5e7eb;
+    }
+
+    .step-item.completed:not(:last-child)::after {
+        background: #059669;
+    }
+
+    .step-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: #e5e7eb;
+        color: #6b7280;
+    }
+
+    .step-item.completed .step-icon {
+        background: #059669;
+        color: white;
+    }
+
+    .step-item.in-progress .step-icon {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .step-content {
+        flex: 1;
+    }
+
+    .step-name {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.25rem;
+    }
+
+    .step-meta {
+        font-size: 0.875rem;
+        color: #6b7280;
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Approval Section */
+    .approval-section {
+        background: #fefce8;
+        margin: -1.5rem;
+        padding: 1.5rem;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .approval-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 2px solid #fbbf24;
+    }
+
+    .approval-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .approval-header h4 {
+        margin: 0;
+        color: #92400e;
+    }
+
+    .request-id {
+        font-size: 0.75rem;
+        color: #6b7280;
+        font-family: monospace;
+    }
+
+    .approval-description {
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+
+    .content-preview {
+        margin-bottom: 1rem;
+    }
+
+    .content-preview label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .content-text {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 1rem;
+        font-size: 0.875rem;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+        margin: 0;
+    }
+
+    .approval-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .feedback-input label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* Artifacts */
+    .artifact-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .artifact-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .artifact-header h4 {
+        margin: 0;
+        color: #374151;
+    }
+
+    .artifact-type {
+        font-size: 0.75rem;
+        color: #6b7280;
+        background: #e5e7eb;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .artifact-content {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 1rem;
+        font-size: 0.875rem;
+        white-space: pre-wrap;
+        max-height: 200px;
+        overflow-y: auto;
+        margin: 0;
+    }
+
+    .artifact-metadata {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .metadata-tag {
+        font-size: 0.75rem;
+        background: #dbeafe;
+        color: #1e40af;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    /* Error Display */
+    .error-section {
+        background: #fef2f2;
+        margin: -1.5rem;
+        padding: 1.5rem;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .error-display {
+        background: white;
+        border: 2px solid #fecaca;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .error-code {
+        font-weight: 600;
+        color: #991b1b;
+        margin-bottom: 0.5rem;
+    }
+
+    .error-message {
+        color: #dc2626;
+        margin-bottom: 0.5rem;
+    }
+
+    .error-stack {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 4px;
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        overflow-x: auto;
+        margin: 0;
+    }
+
+    /* Actions */
+    .details-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+        margin-top: 1rem;
+    }
+
+    /* Spinner */
+    .spinner-small {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .secondary-btn .spinner-small {
+        border-color: rgba(55, 65, 81, 0.3);
+        border-top-color: #374151;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Notification Toast */
+    .notification-toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        animation: slideIn 0.3s ease-out;
+        z-index: 1000;
+    }
+
+    .notification-toast.success {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .notification-toast.error {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .notification-toast.info {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        opacity: 0.6;
+        padding: 0;
+    }
+
+    .toast-close:hover {
+        opacity: 1;
+    }
+
+    @@keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .workflow-container {
+            padding: 1rem;
+        }
+
+        .workflow-title {
+            font-size: 1.5rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .details-actions {
+            flex-direction: column;
+        }
+
+        .notification-toast {
+            left: 1rem;
+            right: 1rem;
+            bottom: 1rem;
+        }
+    }
+</style>
+
+@code {
+    // Decision constants for Razor event handlers
+    private const string DecisionApprove = "approve";
+    private const string DecisionRevise = "revise";
+    private const string DecisionReject = "reject";
+
+    // State
+    private List<WorkflowRunSummary> workflows = [];
+    private WorkflowRun? selectedWorkflow;
+    private bool isLoadingWorkflows = true;
+    private bool isStartingWorkflow = false;
+    private bool isSubmittingApproval = false;
+    private bool isCancelling = false;
+    private string? submittingRequestId;
+    private string? submittingDecision;
+
+    // Form inputs
+    private string newWorkflowTopic = "";
+    private string newWorkflowAudience = "";
+    private string approvalFeedback = "";
+
+    // Notifications
+    private string? notificationMessage;
+    private string notificationType = "info";
+
+    // DTO for parsing approval request data
+    private sealed class ApprovalRequestDto
+    {
+        public string? Content { get; init; }
+        public IReadOnlyList<string>? Options { get; init; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshWorkflows();
+    }
+
+    private async Task RefreshWorkflows()
+    {
+        isLoadingWorkflows = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await WorkflowClient.ListWorkflowsAsync(new ListWorkflowsRequest { Limit = 50 });
+            workflows = response.Data;
+            Logger.LogInformation("Loaded {Count} workflows", workflows.Count);
+
+            // Refresh selected workflow if it exists
+            if (selectedWorkflow != null)
+            {
+                await SelectWorkflow(selectedWorkflow.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load workflows");
+            ShowNotification("Failed to load workflows: " + ex.Message, "error");
+        }
+        finally
+        {
+            isLoadingWorkflows = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartNewWorkflow()
+    {
+        if (string.IsNullOrWhiteSpace(newWorkflowTopic))
+            return;
+
+        isStartingWorkflow = true;
+        StateHasChanged();
+
+        try
+        {
+            var request = new StartWorkflowRequest
+            {
+                WorkflowName = "MarketingContentWorkflow",
+                Input = WorkflowMessage.Create(new
+                {
+                    Topic = newWorkflowTopic,
+                    TargetAudience = newWorkflowAudience
+                })
+            };
+
+            var workflow = await WorkflowClient.StartWorkflowAsync(request);
+            Logger.LogInformation("Started workflow: {WorkflowId}", workflow.Id);
+
+            newWorkflowTopic = "";
+            newWorkflowAudience = "";
+            ShowNotification("Workflow started successfully!", "success");
+
+            await RefreshWorkflows();
+            await SelectWorkflow(workflow.Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to start workflow");
+            ShowNotification("Failed to start workflow: " + ex.Message, "error");
+        }
+        finally
+        {
+            isStartingWorkflow = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectWorkflow(string workflowId)
+    {
+        try
+        {
+            selectedWorkflow = await WorkflowClient.GetWorkflowAsync(workflowId);
+            if (selectedWorkflow == null)
+            {
+                ShowNotification("Workflow not found", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to get workflow details: {WorkflowId}", workflowId);
+            ShowNotification("Failed to load workflow details: " + ex.Message, "error");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SubmitApproval(string requestId, string decision)
+    {
+        if (selectedWorkflow == null)
+            return;
+
+        isSubmittingApproval = true;
+        submittingRequestId = requestId;
+        submittingDecision = decision;
+        StateHasChanged();
+
+        try
+        {
+            var signal = new WorkflowSignal
+            {
+                RequestId = requestId,
+                Response = WorkflowMessage.Create(new
+                {
+                    Decision = decision,
+                    Feedback = approvalFeedback
+                })
+            };
+
+            var updatedWorkflow = await WorkflowClient.SendSignalAsync(selectedWorkflow.Id, signal);
+            Logger.LogInformation("Submitted approval for workflow {WorkflowId}: {Decision}", selectedWorkflow.Id, decision);
+
+            approvalFeedback = "";
+            selectedWorkflow = updatedWorkflow;
+            ShowNotification($"Decision '{decision}' submitted successfully!", "success");
+
+            await RefreshWorkflows();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to submit approval for workflow {WorkflowId}", selectedWorkflow.Id);
+            ShowNotification("Failed to submit approval: " + ex.Message, "error");
+        }
+        finally
+        {
+            isSubmittingApproval = false;
+            submittingRequestId = null;
+            submittingDecision = null;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CancelSelectedWorkflow()
+    {
+        if (selectedWorkflow == null)
+            return;
+
+        isCancelling = true;
+        StateHasChanged();
+
+        try
+        {
+            var updatedWorkflow = await WorkflowClient.CancelWorkflowAsync(selectedWorkflow.Id);
+            Logger.LogInformation("Cancelled workflow: {WorkflowId}", selectedWorkflow.Id);
+
+            selectedWorkflow = updatedWorkflow;
+            ShowNotification("Workflow cancelled", "info");
+
+            await RefreshWorkflows();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to cancel workflow {WorkflowId}", selectedWorkflow.Id);
+            ShowNotification("Failed to cancel workflow: " + ex.Message, "error");
+        }
+        finally
+        {
+            isCancelling = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowNotification(string message, string type)
+    {
+        notificationMessage = message;
+        notificationType = type;
+        StateHasChanged();
+
+        // Auto-dismiss after 5 seconds
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(5000);
+            await InvokeAsync(() =>
+            {
+                if (notificationMessage == message)
+                {
+                    notificationMessage = null;
+                    StateHasChanged();
+                }
+            });
+        });
+    }
+
+    private static string GetStatusClass(WorkflowRunStatus status) => status switch
+    {
+        WorkflowRunStatus.Queued => "status-queued",
+        WorkflowRunStatus.Running => "status-running",
+        WorkflowRunStatus.WaitingForSignal => "status-waiting",
+        WorkflowRunStatus.Cancelling => "status-waiting",
+        WorkflowRunStatus.Completed => "status-completed",
+        WorkflowRunStatus.Cancelled => "status-cancelled",
+        WorkflowRunStatus.Aborted => "status-aborted",
+        WorkflowRunStatus.Failed => "status-failed",
+        _ => ""
+    };
+}

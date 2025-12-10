@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using AgentContracts;
 using AgentWebChat.AgentHost;
@@ -6,6 +6,7 @@ using AgentWebChat.AgentHost.Custom;
 using AgentWebChat.AgentHost.DurableAgents.Utilities;
 using AgentWebChat.AgentHost.Options;
 using AgentWebChat.AgentHost.Utilities;
+using AgentWebChat.AgentHost.Workflows;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.DevUI;
 using Microsoft.Agents.AI.Hosting;
@@ -159,6 +160,19 @@ builder.Services.AddKeyedSingleton<AIAgent>("my-di-matchingname-agent", (sp, nam
         instructions: "you are a dependency inject agent. Tell me all about dependency injection.");
 });
 
+// Register HITL Workflow Host Service and Marketing Content Workflow
+builder.Services.AddSingleton<WorkflowHostService>(sp =>
+{
+    var host = new WorkflowHostService(
+        sp,
+        sp.GetRequiredService<ILogger<WorkflowHostService>>());
+
+    // Register available workflows
+    host.RegisterWorkflow<MarketingContentWorkflow>("marketing-content");
+
+    return host;
+});
+
 var app = builder.Build();
 
 app.MapOpenApi();
@@ -179,6 +193,9 @@ app.MapOpenAIChatCompletions(pirateAgentBuilder);
 
 // Worker meta endpoint used by gateway to uniquely identify this process
 app.MapGet("/worker/meta", (WorkerProcessMetadata meta) => Results.Ok(meta));
+
+// Map HITL Workflow Host endpoints (called by Gateway to execute/resume workflows)
+app.MapWorkflowHost();
 
 app.MapDefaultEndpoints();
 app.Run();

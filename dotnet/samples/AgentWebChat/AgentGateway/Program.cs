@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Net.Http;
@@ -8,6 +8,7 @@ using AgentGateway;
 using AgentGateway.Conversations;
 using AgentGateway.DevUI;
 using AgentGateway.Health;
+using AgentGateway.Workflows;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using AgentGateway.Responses;
 using AgentGateway.Utilities;
@@ -170,6 +171,9 @@ app.MapOpenAIConversations();
 
 // Map Responses API endpoints using the shared implementation from Microsoft.Agents.AI.Hosting.OpenAI
 app.MapOpenAIResponses();
+
+// Map Workflow API endpoints
+app.MapWorkflows();
 
 // Map DevUI
 app.MapDevUI();
