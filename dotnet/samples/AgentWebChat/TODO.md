@@ -99,9 +99,9 @@ This document tracks the implementation progress for end-to-end resilient workfl
 
 **Location:** `MarketR/src/`
 
-- [ ] Add real-time SSE subscription to `GET /v1/workflows/{runId}/events`
-- [ ] Update UI automatically as events stream in
-- [ ] Handle connection drops and reconnection
+- [x] Add real-time SSE subscription to `GET /v1/workflows/{runId}/events`
+- [x] Update UI automatically as events stream in
+- [x] Handle connection drops and reconnection
 
 #### 2. Health Path Configuration
 
@@ -110,8 +110,8 @@ This document tracks the implementation progress for end-to-end resilient workfl
 **Existing TODO (line 118):**
 > "TODO: get these from options"
 
-- [ ] Add `HealthPath` to worker options
-- [ ] Read from configuration instead of hardcoding `/health`
+- [x] Add `HealthPath` to worker options
+- [x] Read from configuration instead of hardcoding `/health`
 
 ---
 

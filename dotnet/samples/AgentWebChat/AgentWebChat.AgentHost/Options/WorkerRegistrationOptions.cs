@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.ComponentModel.DataAnnotations;
 
@@ -32,4 +32,14 @@ public sealed class WorkerOptions
     /// Explicitly configured advertised base address (e.g. https://myhost:1234). If not supplied the system will attempt to derive one from Kestrel listen endpoints.
     /// </summary>
     public string? AdvertisedBaseAddress { get; set; }
+
+    /// <summary>
+    /// The relative path for the health check endpoint. Defaults to "/health".
+    /// </summary>
+    public string HealthPath { get; set; } = "/health";
+
+    /// <summary>
+    /// The relative path for the agent/workflow discovery endpoint. Defaults to "/agents".
+    /// </summary>
+    public string DiscoveryPath { get; set; } = "/agents";
 }

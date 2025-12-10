@@ -122,3 +122,109 @@ export interface ApprovalResponse {
   decision?: string;
   feedback?: string;
 }
+
+// SSE Event Types
+export type WorkflowEventType =
+  | 'workflow.started'
+  | 'step.started'
+  | 'step.completed'
+  | 'signal.requested'
+  | 'signal.received'
+  | 'artifact.created'
+  | 'workflow.completed'
+  | 'workflow.completed.signal'
+  | 'workflow.failed'
+  | 'workflow.cancelled'
+  | 'workflow.aborted';
+
+export interface WorkflowStatusEventBase {
+  type: WorkflowEventType;
+  runId: string;
+  sequenceNumber: number;
+  timestamp: string;
+}
+
+export interface WorkflowStartedEvent extends WorkflowStatusEventBase {
+  type: 'workflow.started';
+  workflowName: string;
+  input?: WorkflowMessage;
+}
+
+export interface WorkflowStepStartedRecord {
+  stepId: string;
+  executorId: string;
+  executorName?: string;
+  startedAt: string;
+}
+
+export interface WorkflowStepCompletedRecord {
+  stepId: string;
+  executorId: string;
+  completedAt: string;
+  output?: WorkflowMessage;
+  durationMs?: number;
+}
+
+export interface WorkflowStepStartedEvent extends WorkflowStatusEventBase {
+  type: 'step.started';
+  step: WorkflowStepStartedRecord;
+}
+
+export interface WorkflowStepCompletedEvent extends WorkflowStatusEventBase {
+  type: 'step.completed';
+  step: WorkflowStepCompletedRecord;
+}
+
+export interface WorkflowSignalRequestedEvent extends WorkflowStatusEventBase {
+  type: 'signal.requested';
+  request: PendingExternalRequest;
+}
+
+export interface WorkflowSignalReceivedEvent extends WorkflowStatusEventBase {
+  type: 'signal.received';
+  requestId: string;
+  response?: WorkflowMessage;
+}
+
+export interface WorkflowArtifactCreatedEvent extends WorkflowStatusEventBase {
+  type: 'artifact.created';
+  artifact: WorkflowArtifactRecord;
+}
+
+export interface WorkflowCompletedEvent extends WorkflowStatusEventBase {
+  type: 'workflow.completed';
+  workflow: WorkflowRun;
+}
+
+export interface WorkflowCompletedSignalEvent extends WorkflowStatusEventBase {
+  type: 'workflow.completed.signal';
+}
+
+export interface WorkflowFailedEvent extends WorkflowStatusEventBase {
+  type: 'workflow.failed';
+  error: WorkflowErrorInfo;
+}
+
+export interface WorkflowCancelledEvent extends WorkflowStatusEventBase {
+  type: 'workflow.cancelled';
+  reason?: string;
+}
+
+export interface WorkflowAbortedEvent extends WorkflowStatusEventBase {
+  type: 'workflow.aborted';
+  reason: string;
+  abortedBy?: string;
+}
+
+export type WorkflowStatusEvent =
+  | WorkflowStartedEvent
+  | WorkflowStepStartedEvent
+  | WorkflowStepCompletedEvent
+  | WorkflowSignalRequestedEvent
+  | WorkflowSignalReceivedEvent
+  | WorkflowArtifactCreatedEvent
+  | WorkflowCompletedEvent
+  | WorkflowCompletedSignalEvent
+  | WorkflowFailedEvent
+  | WorkflowCancelledEvent
+  | WorkflowAbortedEvent;

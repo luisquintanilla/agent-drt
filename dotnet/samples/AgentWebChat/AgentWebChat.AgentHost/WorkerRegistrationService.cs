@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -115,8 +115,8 @@ internal sealed class WorkerRegistrationService : IHostedService, IDisposable
             {
                 HostId = this._hostId,
                 Endpoint = new Uri(advertisedBaseAddress, UriKind.Absolute).ToString(),
-                HealthPath = "/health", // TODO: get these from options. There is no central place to resolve this from, currently, but perhaps we can validate it.
-                DiscoveryPath = "/agents",
+                HealthPath = this._options.HealthPath,
+                DiscoveryPath = this._options.DiscoveryPath,
             };
         }
     }

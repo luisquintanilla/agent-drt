@@ -30,7 +30,7 @@ export function StartWorkflowForm({ onWorkflowStarted, onError }: StartWorkflowF
       };
 
       await workflowApi.startWorkflow({
-        workflowName: 'MarketingContentWorkflow',
+        workflowName: 'marketing-content',
         input: createWorkflowMessage(input),
       });
 
