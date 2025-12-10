@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -51,7 +51,7 @@ public sealed class WorkflowMessage
     /// </summary>
     public T? As<T>(JsonSerializerOptions? options = null)
     {
-        return JsonSerializer.Deserialize<T>(Data.GetRawText(), options);
+        return JsonSerializer.Deserialize<T>(this.Data.GetRawText(), options);
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public sealed class WorkflowMessage
     public bool Is<T>()
     {
         var targetName = typeof(T).FullName ?? typeof(T).Name;
-        return string.Equals(TypeName, targetName, StringComparison.Ordinal);
+        return string.Equals(this.TypeName, targetName, StringComparison.Ordinal);
     }
 }
 
@@ -215,7 +215,7 @@ public sealed record WorkflowStepInfo
     public long? DurationMs { get; init; }
 
     [JsonIgnore]
-    public bool IsCompleted => CompletedAt.HasValue;
+    public bool IsCompleted => this.CompletedAt.HasValue;
 }
 
 /// <summary>

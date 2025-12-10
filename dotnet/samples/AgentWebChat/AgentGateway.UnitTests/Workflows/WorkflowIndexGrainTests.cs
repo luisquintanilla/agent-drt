@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using AgentContracts.Workflows;
 using AgentGateway.Workflows;
@@ -15,10 +15,10 @@ public sealed class WorkflowIndexGrainTests
 
     public WorkflowIndexGrainTests(OrleansTestClusterFixture fixture)
     {
-        _fixture = fixture;
+        this._fixture = fixture;
     }
 
-    private IWorkflowIndexGrain GetIndexGrain() => _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>("default");
+    private IWorkflowIndexGrain GetIndexGrain() => this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>("default");
 
     private static WorkflowRunSummary CreateSummary(
         string id,
@@ -42,7 +42,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task RegisterAsync_AddsWorkflowToIndex()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"reg-test-{Guid.NewGuid():N}";
         var summary = CreateSummary(runId, "RegisterTestWorkflow");
 
@@ -61,7 +61,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task RegisterAsync_MultipleWorkflows_AllAreIndexed()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var baseId = $"multi-{Guid.NewGuid():N}";
         var ids = Enumerable.Range(1, 3).Select(i => $"{baseId}-{i}").ToList();
 
@@ -88,7 +88,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task UpdateAsync_UpdatesStatus()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"update-test-{Guid.NewGuid():N}";
         await grain.RegisterAsync(CreateSummary(runId), CancellationToken.None);
 
@@ -105,7 +105,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task UpdateAsync_UpdatesPendingRequestCount()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"pending-test-{Guid.NewGuid():N}";
         await grain.RegisterAsync(CreateSummary(runId), CancellationToken.None);
 
@@ -123,7 +123,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task UpdateAsync_SetsCompletedAt_ForTerminalStatus()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"complete-test-{Guid.NewGuid():N}";
         await grain.RegisterAsync(CreateSummary(runId), CancellationToken.None);
 
@@ -142,7 +142,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task UpdateAsync_DoesNotThrow_WhenWorkflowNotFound()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"not-found-{Guid.NewGuid():N}";
 
         // Act - should not throw
@@ -161,7 +161,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task GetAsync_ReturnsNull_WhenNotFound()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"nonexistent-{Guid.NewGuid():N}";
 
         // Act
@@ -175,7 +175,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task GetAsync_ReturnsSummary_WhenFound()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"get-test-{Guid.NewGuid():N}";
         var summary = CreateSummary(runId, "GetTestWorkflow");
         await grain.RegisterAsync(summary, CancellationToken.None);
@@ -197,7 +197,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task ListAsync_ReturnsEmptyList_WhenNoWorkflows()
     {
         // Arrange - use a unique grain key to ensure isolation
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"empty-{Guid.NewGuid():N}");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"empty-{Guid.NewGuid():N}");
 
         // Act
         var result = await grain.ListAsync(null, 10, null, null, CancellationToken.None);
@@ -214,7 +214,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task ListAsync_ReturnsWorkflows_InReverseChronologicalOrder()
     {
         // Arrange - use a unique grain key
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"order-{Guid.NewGuid():N}");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"order-{Guid.NewGuid():N}");
 
         foreach (var id in new[] { "first", "second", "third" })
         {
@@ -237,7 +237,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task ListAsync_RespectsLimit()
     {
         // Arrange - use a unique grain key
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"limit-{Guid.NewGuid():N}");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"limit-{Guid.NewGuid():N}");
 
         for (int i = 1; i <= 5; i++)
         {
@@ -256,7 +256,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task ListAsync_FiltersByStatus()
     {
         // Arrange - use a unique grain key
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"filter-{Guid.NewGuid():N}");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"filter-{Guid.NewGuid():N}");
 
         await grain.RegisterAsync(CreateSummary("queued-1", status: WorkflowRunStatus.Queued), CancellationToken.None);
         await grain.RegisterAsync(CreateSummary("running-1", status: WorkflowRunStatus.Running), CancellationToken.None);
@@ -275,7 +275,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task ListAsync_SupportsPaginationWithAfter()
     {
         // Arrange - use a unique grain key
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"after-{Guid.NewGuid():N}");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"after-{Guid.NewGuid():N}");
 
         await grain.RegisterAsync(CreateSummary("first"), CancellationToken.None);
         await grain.RegisterAsync(CreateSummary("second"), CancellationToken.None);
@@ -295,7 +295,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task ListAsync_ReturnsFirstIdAndLastId()
     {
         // Arrange - use a unique grain key
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"ids-{Guid.NewGuid():N}");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"ids-{Guid.NewGuid():N}");
 
         await grain.RegisterAsync(CreateSummary("first"), CancellationToken.None);
         await grain.RegisterAsync(CreateSummary("second"), CancellationToken.None);
@@ -317,7 +317,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task RemoveAsync_RemovesWorkflowFromIndex()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"remove-test-{Guid.NewGuid():N}";
         await grain.RegisterAsync(CreateSummary(runId), CancellationToken.None);
 
@@ -337,7 +337,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task RemoveAsync_DoesNotThrow_WhenWorkflowNotFound()
     {
         // Arrange
-        var grain = GetIndexGrain();
+        var grain = this.GetIndexGrain();
         var runId = $"remove-nonexistent-{Guid.NewGuid():N}";
 
         // Act - should not throw
@@ -350,7 +350,7 @@ public sealed class WorkflowIndexGrainTests
     public async Task RemoveAsync_RemovesFromListResults()
     {
         // Arrange - use a unique grain key
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"remove-list-{Guid.NewGuid():N}");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>($"remove-list-{Guid.NewGuid():N}");
 
         await grain.RegisterAsync(CreateSummary("keep-1"), CancellationToken.None);
         await grain.RegisterAsync(CreateSummary("remove-me"), CancellationToken.None);
@@ -374,8 +374,8 @@ public sealed class WorkflowIndexGrainTests
     {
         // Arrange
         var runId = $"integration-{Guid.NewGuid():N}";
-        var workflowGrain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
-        var indexGrain = GetIndexGrain();
+        var workflowGrain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var indexGrain = this.GetIndexGrain();
 
         // Act
         await workflowGrain.StartAsync(
@@ -398,8 +398,8 @@ public sealed class WorkflowIndexGrainTests
     {
         // Arrange
         var runId = $"status-update-{Guid.NewGuid():N}";
-        var workflowGrain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
-        var indexGrain = GetIndexGrain();
+        var workflowGrain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var indexGrain = this.GetIndexGrain();
 
         await workflowGrain.StartAsync(
             new StartWorkflowRequest
@@ -426,8 +426,8 @@ public sealed class WorkflowIndexGrainTests
     {
         // Arrange
         var runId = $"pending-count-{Guid.NewGuid():N}";
-        var workflowGrain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
-        var indexGrain = GetIndexGrain();
+        var workflowGrain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var indexGrain = this.GetIndexGrain();
 
         await workflowGrain.StartAsync(
             new StartWorkflowRequest

@@ -6,11 +6,11 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
-using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -17,19 +17,19 @@ internal sealed class RegisteredServicesEntityProvider : IEntityProvider
 
     public RegisteredServicesEntityProvider(IServiceProvider serviceProvider)
     {
-        _serviceProvider = serviceProvider;
+        this._serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc/>
     public async IAsyncEnumerable<EntityInfo> GetEntitiesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var agents = GetRegisteredEntities<AIAgent>(_serviceProvider);
+        var agents = GetRegisteredEntities<AIAgent>(this._serviceProvider);
         foreach (var agent in agents)
         {
             yield return CreateAgentEntityInfo(agent);
         }
 
-        var workflows = GetRegisteredEntities<Workflow>(_serviceProvider);
+        var workflows = GetRegisteredEntities<Workflow>(this._serviceProvider);
         foreach (var workflow in workflows)
         {
             yield return CreateWorkflowEntityInfo(workflow);
@@ -41,7 +41,7 @@ internal sealed class RegisteredServicesEntityProvider : IEntityProvider
     /// <inheritdoc/>
     public Task<EntityInfo?> GetEntityAsync(string entityId, CancellationToken cancellationToken = default)
     {
-        var agents = GetRegisteredEntities<AIAgent>(_serviceProvider);
+        var agents = GetRegisteredEntities<AIAgent>(this._serviceProvider);
         foreach (var agent in agents)
         {
             var info = CreateAgentEntityInfo(agent);
@@ -51,7 +51,7 @@ internal sealed class RegisteredServicesEntityProvider : IEntityProvider
             }
         }
 
-        var workflows = GetRegisteredEntities<Workflow>(_serviceProvider);
+        var workflows = GetRegisteredEntities<Workflow>(this._serviceProvider);
         foreach (var workflow in workflows)
         {
             var info = CreateWorkflowEntityInfo(workflow);

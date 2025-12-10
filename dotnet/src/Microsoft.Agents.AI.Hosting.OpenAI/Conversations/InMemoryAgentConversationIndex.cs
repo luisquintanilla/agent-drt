@@ -4,8 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 

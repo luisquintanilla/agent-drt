@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -117,7 +117,7 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
             }
 
             // Read the SSE stream to completion - events are informational since state updates come via callbacks
-            await ConsumeEventStreamAsync(httpResponse, request.RunId, cancellationToken);
+            await this.ConsumeEventStreamAsync(httpResponse, request.RunId, cancellationToken);
 
             this._logger.LogInformation(
                 "Workflow {RunId} execution dispatched successfully to worker {WorkerId}",
@@ -220,7 +220,7 @@ internal sealed class WorkerWorkflowExecutor : IWorkflowExecutor
             }
 
             // Read the SSE stream to completion
-            await ConsumeEventStreamAsync(httpResponse, request.RunId, cancellationToken);
+            await this.ConsumeEventStreamAsync(httpResponse, request.RunId, cancellationToken);
 
             this._logger.LogInformation(
                 "Workflow {RunId} resume dispatched successfully to worker {WorkerId}",

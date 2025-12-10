@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -99,4 +99,10 @@ internal interface IWorkflowGrain : IGrainWithStringKey
     /// Assigns a worker to execute this workflow.
     /// </summary>
     Task SetAssignedWorkerIdAsync(string workerId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Permanently deletes a workflow run and all its associated data.
+    /// Only allowed for workflows in terminal status (Completed, Cancelled, Aborted, Failed).
+    /// </summary>
+    Task DeleteAsync(CancellationToken cancellationToken);
 }

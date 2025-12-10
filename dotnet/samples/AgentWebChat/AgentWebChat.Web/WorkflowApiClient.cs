@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -22,8 +22,8 @@ public sealed class WorkflowApiClient : IWorkflowClient
     public WorkflowApiClient(HttpClient httpClient)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
-        _httpClient = httpClient;
-        _jsonOptions = AgentContractsJsonUtilities.DefaultOptions;
+        this._httpClient = httpClient;
+        this._jsonOptions = AgentContractsJsonUtilities.DefaultOptions;
     }
 
     /// <inheritdoc/>
@@ -33,15 +33,15 @@ public sealed class WorkflowApiClient : IWorkflowClient
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var response = await _httpClient.PostAsJsonAsync(
+        var response = await this._httpClient.PostAsJsonAsync(
             "/v1/workflows",
             request,
-            _jsonOptions,
+            this._jsonOptions,
             cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<WorkflowRun>(_jsonOptions, cancellationToken)
+        return await response.Content.ReadFromJsonAsync<WorkflowRun>(this._jsonOptions, cancellationToken)
             ?? throw new InvalidOperationException("Failed to parse workflow run response");
     }
 
@@ -53,7 +53,7 @@ public sealed class WorkflowApiClient : IWorkflowClient
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
 
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}", UriKind.Relative);
-        var response = await _httpClient.GetAsync(uri, cancellationToken);
+        var response = await this._httpClient.GetAsync(uri, cancellationToken);
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -62,7 +62,7 @@ public sealed class WorkflowApiClient : IWorkflowClient
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<WorkflowRun>(_jsonOptions, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<WorkflowRun>(this._jsonOptions, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -97,10 +97,10 @@ public sealed class WorkflowApiClient : IWorkflowClient
             : "/v1/workflows";
 
         var uri = new Uri(url, UriKind.Relative);
-        var response = await _httpClient.GetAsync(uri, cancellationToken);
+        var response = await this._httpClient.GetAsync(uri, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<WorkflowListResponse<WorkflowRunSummary>>(_jsonOptions, cancellationToken)
+        return await response.Content.ReadFromJsonAsync<WorkflowListResponse<WorkflowRunSummary>>(this._jsonOptions, cancellationToken)
             ?? throw new InvalidOperationException("Failed to parse workflow list response");
     }
 
@@ -113,15 +113,15 @@ public sealed class WorkflowApiClient : IWorkflowClient
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
         ArgumentNullException.ThrowIfNull(signal);
 
-        var response = await _httpClient.PostAsJsonAsync(
+        var response = await this._httpClient.PostAsJsonAsync(
             $"/v1/workflows/{Uri.EscapeDataString(runId)}/signal",
             signal,
-            _jsonOptions,
+            this._jsonOptions,
             cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<WorkflowRun>(_jsonOptions, cancellationToken)
+        return await response.Content.ReadFromJsonAsync<WorkflowRun>(this._jsonOptions, cancellationToken)
             ?? throw new InvalidOperationException("Failed to parse workflow run response");
     }
 
@@ -133,11 +133,11 @@ public sealed class WorkflowApiClient : IWorkflowClient
         ArgumentException.ThrowIfNullOrWhiteSpace(runId);
 
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/cancel", UriKind.Relative);
-        var response = await _httpClient.PostAsync(uri, content: null, cancellationToken);
+        var response = await this._httpClient.PostAsync(uri, content: null, cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<WorkflowRun>(_jsonOptions, cancellationToken)
+        return await response.Content.ReadFromJsonAsync<WorkflowRun>(this._jsonOptions, cancellationToken)
             ?? throw new InvalidOperationException("Failed to parse workflow run response");
     }
 
@@ -152,15 +152,15 @@ public sealed class WorkflowApiClient : IWorkflowClient
 
         var request = new AbortWorkflowRequest { Reason = reason };
 
-        var response = await _httpClient.PostAsJsonAsync(
+        var response = await this._httpClient.PostAsJsonAsync(
             $"/v1/workflows/{Uri.EscapeDataString(runId)}/abort",
             request,
-            _jsonOptions,
+            this._jsonOptions,
             cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<WorkflowRun>(_jsonOptions, cancellationToken)
+        return await response.Content.ReadFromJsonAsync<WorkflowRun>(this._jsonOptions, cancellationToken)
             ?? throw new InvalidOperationException("Failed to parse workflow run response");
     }
 
@@ -179,7 +179,7 @@ public sealed class WorkflowApiClient : IWorkflowClient
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/event-stream"));
 
-        using var response = await _httpClient.SendAsync(
+        using var response = await this._httpClient.SendAsync(
             request,
             HttpCompletionOption.ResponseHeadersRead,
             cancellationToken);
@@ -201,7 +201,7 @@ public sealed class WorkflowApiClient : IWorkflowClient
                 // Empty line means end of event
                 if (data != null && eventType != null)
                 {
-                    var evt = ParseEvent(eventType, data);
+                    var evt = this.ParseEvent(eventType, data);
                     if (evt != null)
                     {
                         yield return evt;
@@ -226,7 +226,7 @@ public sealed class WorkflowApiClient : IWorkflowClient
         // Handle any remaining event
         if (data != null && eventType != null)
         {
-            var evt = ParseEvent(eventType, data);
+            var evt = this.ParseEvent(eventType, data);
             if (evt != null)
             {
                 yield return evt;
@@ -239,7 +239,7 @@ public sealed class WorkflowApiClient : IWorkflowClient
         try
         {
             // The event data should be parseable as WorkflowStatusEvent (polymorphic)
-            return JsonSerializer.Deserialize<WorkflowStatusEvent>(data, _jsonOptions);
+            return JsonSerializer.Deserialize<WorkflowStatusEvent>(data, this._jsonOptions);
         }
         catch (JsonException ex)
         {

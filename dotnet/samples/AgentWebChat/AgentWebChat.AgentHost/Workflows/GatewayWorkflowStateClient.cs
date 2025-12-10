@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -31,8 +31,8 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
     {
         ArgumentNullException.ThrowIfNull(httpClient);
 
-        _httpClient = httpClient;
-        _jsonOptions = jsonOptions ?? AgentContractsJsonUtilities.DefaultOptions;
+        this._httpClient = httpClient;
+        this._jsonOptions = jsonOptions ?? AgentContractsJsonUtilities.DefaultOptions;
     }
 
     /// <inheritdoc/>
@@ -52,11 +52,11 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/status", UriKind.Relative);
         using var request = new HttpRequestMessage(HttpMethod.Put, uri)
         {
-            Content = JsonContent.Create(update, mediaType: null, _jsonOptions)
+            Content = JsonContent.Create(update, mediaType: null, this._jsonOptions)
         };
         AddETagHeader(request, etag);
 
-        return await SendStateRequestAsync(runId, request, cancellationToken);
+        return await this.SendStateRequestAsync(runId, request, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -74,11 +74,11 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/steps/started", UriKind.Relative);
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
-            Content = JsonContent.Create(step, mediaType: null, _jsonOptions)
+            Content = JsonContent.Create(step, mediaType: null, this._jsonOptions)
         };
         AddETagHeader(request, etag);
 
-        return await SendStateRequestAsync(runId, request, cancellationToken);
+        return await this.SendStateRequestAsync(runId, request, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -98,11 +98,11 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/steps/completed", UriKind.Relative);
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
-            Content = JsonContent.Create(step, mediaType: null, _jsonOptions)
+            Content = JsonContent.Create(step, mediaType: null, this._jsonOptions)
         };
         AddETagHeader(request, etag);
 
-        return await SendStateRequestAsync(runId, request, cancellationToken);
+        return await this.SendStateRequestAsync(runId, request, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -118,11 +118,11 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/pending-requests", UriKind.Relative);
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, uri)
         {
-            Content = JsonContent.Create(request, mediaType: null, _jsonOptions)
+            Content = JsonContent.Create(request, mediaType: null, this._jsonOptions)
         };
         AddETagHeader(httpRequest, etag);
 
-        return await SendStateRequestAsync(runId, httpRequest, cancellationToken);
+        return await this.SendStateRequestAsync(runId, httpRequest, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -139,7 +139,7 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         using var request = new HttpRequestMessage(HttpMethod.Delete, uri);
         AddETagHeader(request, etag);
 
-        return await SendStateRequestAsync(runId, request, cancellationToken);
+        return await this.SendStateRequestAsync(runId, request, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -157,11 +157,11 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/checkpoint", UriKind.Relative);
         using var request = new HttpRequestMessage(HttpMethod.Put, uri)
         {
-            Content = JsonContent.Create(checkpoint, mediaType: null, _jsonOptions)
+            Content = JsonContent.Create(checkpoint, mediaType: null, this._jsonOptions)
         };
         AddETagHeader(request, etag);
 
-        return await SendStateRequestAsync(runId, request, cancellationToken);
+        return await this.SendStateRequestAsync(runId, request, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -177,7 +177,7 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
 
         try
         {
-            var response = await _httpClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
+            var response = await this._httpClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NoContent)
             {
@@ -191,7 +191,7 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
 
             response.EnsureSuccessStatusCode();
 
-            return await response.Content.ReadFromJsonAsync<WorkflowCheckpointResult>(_jsonOptions, cancellationToken).ConfigureAwait(false);
+            return await response.Content.ReadFromJsonAsync<WorkflowCheckpointResult>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException ex)
         {
@@ -212,11 +212,11 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/artifacts", UriKind.Relative);
         using var request = new HttpRequestMessage(HttpMethod.Post, uri)
         {
-            Content = JsonContent.Create(artifact, mediaType: null, _jsonOptions)
+            Content = JsonContent.Create(artifact, mediaType: null, this._jsonOptions)
         };
         AddETagHeader(request, etag);
 
-        return await SendStateRequestAsync(runId, request, cancellationToken);
+        return await this.SendStateRequestAsync(runId, request, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -231,7 +231,7 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
 
         try
         {
-            var response = await _httpClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
+            var response = await this._httpClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -240,7 +240,7 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
 
             response.EnsureSuccessStatusCode();
 
-            var run = await response.Content.ReadFromJsonAsync<WorkflowRun>(_jsonOptions, cancellationToken).ConfigureAwait(false);
+            var run = await response.Content.ReadFromJsonAsync<WorkflowRun>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
             return run?.ETag;
         }
         catch (HttpRequestException ex)
@@ -264,7 +264,7 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
     {
         try
         {
-            var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var response = await this._httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -281,7 +281,7 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
 
             response.EnsureSuccessStatusCode();
 
-            var result = await response.Content.ReadFromJsonAsync<ETagResponse>(_jsonOptions, cancellationToken).ConfigureAwait(false);
+            var result = await response.Content.ReadFromJsonAsync<ETagResponse>(this._jsonOptions, cancellationToken).ConfigureAwait(false);
             return result?.ETag ?? throw new InvalidOperationException("Failed to get ETag from response.");
         }
         catch (HttpRequestException ex)

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   SystemStatusWidget,
   WorkerListWidget,
@@ -21,19 +21,19 @@ const REFRESH_INTERVAL_MS = 10000; // 10 seconds
 export default function App() {
   // System status state
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
-  const [statusLoading, setStatusLoading] = useState(true);
   const [statusError, setStatusError] = useState<Error | null>(null);
 
   // Workers state
   const [workers, setWorkers] = useState<WorkerStatus[]>([]);
-  const [workersLoading, setWorkersLoading] = useState(true);
   const [workersError, setWorkersError] = useState<Error | null>(null);
 
   // Workflows state
   const [activeWorkflows, setActiveWorkflows] = useState<WorkflowMonitoringSummary[]>([]);
   const [recentWorkflows, setRecentWorkflows] = useState<WorkflowMonitoringSummary[]>([]);
-  const [workflowsLoading, setWorkflowsLoading] = useState(true);
   const [workflowsError, setWorkflowsError] = useState<Error | null>(null);
+
+  // Track initial load state (only show skeletons on first load)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // Selected workflow for detail modal
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
@@ -44,36 +44,32 @@ export default function App() {
   // SSE events state
   const [events, setEvents] = useState<MonitoringEvent[]>([]);
 
-  // Fetch functions
+  // Track if initial fetch has been done
+  const initialFetchDone = useRef(false);
+
+  // Fetch functions - these update data silently in the background
   const fetchSystemStatus = useCallback(async () => {
     try {
-      setStatusLoading(true);
       setStatusError(null);
       const status = await monitoringApi.getSystemStatus();
       setSystemStatus(status);
     } catch (e) {
       setStatusError(e instanceof Error ? e : new Error(String(e)));
-    } finally {
-      setStatusLoading(false);
     }
   }, []);
 
   const fetchWorkers = useCallback(async () => {
     try {
-      setWorkersLoading(true);
       setWorkersError(null);
       const data = await monitoringApi.getWorkers();
       setWorkers(data);
     } catch (e) {
       setWorkersError(e instanceof Error ? e : new Error(String(e)));
-    } finally {
-      setWorkersLoading(false);
     }
   }, []);
 
   const fetchWorkflows = useCallback(async () => {
     try {
-      setWorkflowsLoading(true);
       setWorkflowsError(null);
       const [active, recent] = await Promise.all([
         monitoringApi.getActiveWorkflows(),
@@ -83,22 +79,23 @@ export default function App() {
       setRecentWorkflows(recent);
     } catch (e) {
       setWorkflowsError(e instanceof Error ? e : new Error(String(e)));
-    } finally {
-      setWorkflowsLoading(false);
     }
   }, []);
 
-  const refreshAll = useCallback(() => {
-    fetchSystemStatus();
-    fetchWorkers();
-    fetchWorkflows();
+  // Refresh all data silently in the background
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      fetchSystemStatus(),
+      fetchWorkers(),
+      fetchWorkflows(),
+    ]);
   }, [fetchSystemStatus, fetchWorkers, fetchWorkflows]);
 
-  // Handle SSE events
+  // Handle SSE events - refresh data silently
   const handleEvent = useCallback((event: MonitoringEvent) => {
     setEvents((prev) => [...prev.slice(-999), event]); // Keep last 1000 events
 
-    // Refresh relevant data based on event type
+    // Refresh relevant data based on event type (silently in background)
     if (event.eventType.includes('Worker')) {
       fetchWorkers();
       fetchSystemStatus();
@@ -117,7 +114,13 @@ export default function App() {
 
   // Initial fetch and periodic refresh
   useEffect(() => {
-    refreshAll();
+    if (!initialFetchDone.current) {
+      initialFetchDone.current = true;
+      // Initial load - then mark as complete
+      refreshAll().then(() => {
+        setInitialLoadComplete(true);
+      });
+    }
 
     const interval = setInterval(refreshAll, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
@@ -190,7 +193,7 @@ export default function App() {
         <section className="dashboard-row status-row">
           <SystemStatusWidget
             status={systemStatus}
-            isLoading={statusLoading}
+            isLoading={!initialLoadComplete}
             error={statusError}
           />
         </section>
@@ -199,7 +202,7 @@ export default function App() {
           <div className="column workers-column">
             <WorkerListWidget
               workers={workers}
-              isLoading={workersLoading}
+              isLoading={!initialLoadComplete}
               error={workersError}
               onRefresh={fetchWorkers}
             />
@@ -209,7 +212,7 @@ export default function App() {
             <WorkflowsWidget
               activeWorkflows={activeWorkflows}
               recentWorkflows={recentWorkflows}
-              isLoading={workflowsLoading}
+              isLoading={!initialLoadComplete}
               error={workflowsError}
               onRefresh={fetchWorkflows}
               onSelectWorkflow={handleSelectWorkflow}
@@ -231,6 +234,7 @@ export default function App() {
         <WorkflowDetailModal
           runId={selectedWorkflowId}
           onClose={handleCloseModal}
+          onWorkflowUpdated={refreshAll}
         />
       )}
     </div>

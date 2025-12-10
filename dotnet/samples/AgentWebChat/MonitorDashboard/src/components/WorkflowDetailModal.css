@@ -118,11 +118,66 @@
 /* Modal Footer */
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--border, #333);
   background: var(--card-inner-bg, #252525);
+}
+
+.footer-actions-left,
+.footer-actions-right {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Action Buttons */
+.action-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-button.cancel-workflow {
+  background: var(--warning-bg, #3d331b);
+  color: var(--warning, #ffb74d);
+  border: 1px solid var(--warning, #ffb74d);
+}
+
+.action-button.cancel-workflow:hover:not(:disabled) {
+  background: var(--warning, #ffb74d);
+  color: #1a1a1a;
+}
+
+.action-button.abort-workflow {
+  background: var(--error-bg, #3d1b1b);
+  color: var(--error, #ef5350);
+  border: 1px solid var(--error, #ef5350);
+}
+
+.action-button.abort-workflow:hover:not(:disabled) {
+  background: var(--error, #ef5350);
+  color: white;
+}
+
+.action-button.delete-workflow {
+  background: var(--error-bg, #3d1b1b);
+  color: var(--error, #ef5350);
+  border: 1px solid var(--error, #ef5350);
+}
+
+.action-button.delete-workflow:hover:not(:disabled) {
+  background: var(--error, #ef5350);
+  color: white;
 }
 
 .refresh-button {
@@ -556,4 +611,151 @@
   margin: 0 0 0.5rem 0;
   font-size: 0.875rem;
   color: var(--text-secondary, #b0b0b0);
+}
+
+/* Confirmation Dialog Overlay */
+.confirm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  border-radius: 8px;
+}
+
+.confirm-dialog {
+  background: var(--card-bg, #1e1e1e);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border, #333);
+}
+
+.confirm-dialog h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+}
+
+.confirm-dialog h3.cancel-title {
+  color: var(--warning, #ffb74d);
+}
+
+.confirm-dialog h3.abort-title {
+  color: var(--error, #ef5350);
+}
+
+.confirm-dialog h3.delete-title {
+  color: var(--error, #ef5350);
+}
+
+.confirm-message {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  color: var(--text-primary, #f5f5f5);
+  line-height: 1.5;
+}
+
+.confirm-message strong {
+  color: var(--text-primary, #f5f5f5);
+}
+
+.confirm-details {
+  padding: 0.75rem;
+  background: var(--card-inner-bg, #252525);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.confirm-details .detail-row {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+}
+
+.confirm-details .label {
+  color: var(--text-secondary, #b0b0b0);
+}
+
+.confirm-details .value {
+  color: var(--text-primary, #f5f5f5);
+}
+
+.confirm-details .value.monospace {
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.confirm-error {
+  padding: 0.75rem;
+  background: var(--error-bg, #3d1b1b);
+  color: var(--error, #ef5350);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.confirm-button {
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.confirm-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.confirm-button.confirm-no {
+  background: var(--card-inner-bg, #252525);
+  color: var(--text-primary, #f5f5f5);
+  border: 1px solid var(--border, #333);
+}
+
+.confirm-button.confirm-no:hover:not(:disabled) {
+  background: var(--hover-bg, #2a2a2a);
+}
+
+.confirm-button.confirm-cancel {
+  background: var(--warning, #ffb74d);
+  color: #1a1a1a;
+}
+
+.confirm-button.confirm-cancel:hover:not(:disabled) {
+  background: #ffc870;
+}
+
+.confirm-button.confirm-abort {
+  background: var(--error, #ef5350);
+  color: white;
+}
+
+.confirm-button.confirm-abort:hover:not(:disabled) {
+  background: #f27573;
+}
+
+.confirm-button.confirm-delete {
+  background: var(--error, #ef5350);
+  color: white;
+}
+
+.confirm-button.confirm-delete:hover:not(:disabled) {
+  background: #f27573;
 }

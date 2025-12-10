@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.AI;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
+using Microsoft.Extensions.AI;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 

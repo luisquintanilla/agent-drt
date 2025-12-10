@@ -6,13 +6,19 @@ import './WorkflowDetailModal.css';
 interface WorkflowDetailModalProps {
   runId: string;
   onClose: () => void;
+  onWorkflowUpdated?: () => void;
 }
 
-export function WorkflowDetailModal({ runId, onClose }: WorkflowDetailModalProps) {
+type ConfirmAction = 'cancel' | 'abort' | 'delete' | null;
+
+export function WorkflowDetailModal({ runId, onClose, onWorkflowUpdated }: WorkflowDetailModalProps) {
   const [workflow, setWorkflow] = useState<WorkflowRun | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [activeSection, setActiveSection] = useState<'overview' | 'steps' | 'artifacts' | 'requests'>('overview');
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+  const [actionInProgress, setActionInProgress] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchWorkflow = useCallback(async () => {
     setIsLoading(true);
@@ -35,16 +41,71 @@ export function WorkflowDetailModal({ runId, onClose }: WorkflowDetailModalProps
     fetchWorkflow();
   }, [fetchWorkflow]);
 
-  // Close on escape key
+  // Close on escape key (but not if confirm dialog is open)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (confirmAction) {
+          setConfirmAction(null);
+        } else {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, confirmAction]);
+
+  const handleCancelWorkflow = useCallback(async () => {
+    setActionInProgress(true);
+    setActionError(null);
+    try {
+      const updated = await monitoringApi.cancelWorkflow(runId);
+      setWorkflow(updated);
+      setConfirmAction(null);
+      onWorkflowUpdated?.();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setActionInProgress(false);
+    }
+  }, [runId, onWorkflowUpdated]);
+
+  const handleAbortWorkflow = useCallback(async () => {
+    setActionInProgress(true);
+    setActionError(null);
+    try {
+      const updated = await monitoringApi.abortWorkflow(runId, 'Aborted via monitoring dashboard');
+      setWorkflow(updated);
+      setConfirmAction(null);
+      onWorkflowUpdated?.();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setActionInProgress(false);
+    }
+  }, [runId, onWorkflowUpdated]);
+
+  const handleDeleteWorkflow = useCallback(async () => {
+    setActionInProgress(true);
+    setActionError(null);
+    try {
+      await monitoringApi.deleteWorkflow(runId);
+      setConfirmAction(null);
+      onWorkflowUpdated?.();
+      onClose(); // Close the modal after successful deletion
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setActionInProgress(false);
+    }
+  }, [runId, onWorkflowUpdated, onClose]);
+
+  // Check if workflow can be cancelled/aborted (only active workflows)
+  const canCancel = workflow && !isTerminalStatus(workflow.status);
+  const canAbort = workflow && !isTerminalStatus(workflow.status);
+  // Can only delete workflows in terminal status
+  const canDelete = workflow && isTerminalStatus(workflow.status);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -106,17 +167,201 @@ export function WorkflowDetailModal({ runId, onClose }: WorkflowDetailModalProps
             </div>
 
             <div className="modal-footer">
-              <button onClick={fetchWorkflow} className="refresh-button">
-                Refresh
-              </button>
-              <button onClick={onClose} className="close-button-secondary">
-                Close
-              </button>
+              <div className="footer-actions-left">
+                {canCancel && (
+                  <button
+                    onClick={() => setConfirmAction('cancel')}
+                    className="action-button cancel-workflow"
+                    disabled={actionInProgress}
+                  >
+                    Cancel Workflow
+                  </button>
+                )}
+                {canAbort && (
+                  <button
+                    onClick={() => setConfirmAction('abort')}
+                    className="action-button abort-workflow"
+                    disabled={actionInProgress}
+                  >
+                    Abort Workflow
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => setConfirmAction('delete')}
+                    className="action-button delete-workflow"
+                    disabled={actionInProgress}
+                  >
+                    Delete Workflow
+                  </button>
+                )}
+              </div>
+              <div className="footer-actions-right">
+                <button onClick={fetchWorkflow} className="refresh-button">
+                  Refresh
+                </button>
+                <button onClick={onClose} className="close-button-secondary">
+                  Close
+                </button>
+              </div>
             </div>
+
+            {/* Confirmation Dialog */}
+            {confirmAction && (
+              <ConfirmDialog
+                action={confirmAction}
+                workflowName={workflow.workflowName}
+                runId={runId}
+                isLoading={actionInProgress}
+                error={actionError}
+                onConfirm={
+                  confirmAction === 'cancel'
+                    ? handleCancelWorkflow
+                    : confirmAction === 'abort'
+                    ? handleAbortWorkflow
+                    : handleDeleteWorkflow
+                }
+                onCancel={() => {
+                  setConfirmAction(null);
+                  setActionError(null);
+                }}
+              />
+            )}
           </>
         )}
       </div>
     </div>
+  );
+}
+
+// Confirmation dialog component
+interface ConfirmDialogProps {
+  action: 'cancel' | 'abort' | 'delete';
+  workflowName: string;
+  runId: string;
+  isLoading: boolean;
+  error: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function ConfirmDialog({ action, workflowName, runId, isLoading, error, onConfirm, onCancel }: ConfirmDialogProps) {
+  const isAbort = action === 'abort';
+  const isDelete = action === 'delete';
+  
+  const getTitle = () => {
+    if (isDelete) return 'Delete Workflow?';
+    if (isAbort) return 'Abort Workflow?';
+    return 'Cancel Workflow?';
+  };
+
+  const getMessage = () => {
+    if (isDelete) {
+      return (
+        <>
+          This will <strong>permanently delete</strong> the workflow and all its associated data.
+          This action cannot be undone.
+        </>
+      );
+    }
+    if (isAbort) {
+      return (
+        <>
+          This will <strong>forcefully stop</strong> the workflow immediately without cleanup.
+          This action cannot be undone.
+        </>
+      );
+    }
+    return (
+      <>
+        This will request <strong>cooperative cancellation</strong> of the workflow.
+        The workflow will be notified and given a chance to clean up.
+      </>
+    );
+  };
+
+  const getTitleClass = () => {
+    if (isDelete) return 'delete-title';
+    if (isAbort) return 'abort-title';
+    return 'cancel-title';
+  };
+
+  const getConfirmButtonClass = () => {
+    if (isDelete) return 'confirm-delete';
+    if (isAbort) return 'confirm-abort';
+    return 'confirm-cancel';
+  };
+
+  const getConfirmText = () => {
+    if (isLoading) {
+      if (isDelete) return 'Deleting...';
+      if (isAbort) return 'Aborting...';
+      return 'Cancelling...';
+    }
+    if (isDelete) return 'Yes, Delete';
+    if (isAbort) return 'Yes, Abort';
+    return 'Yes, Cancel';
+  };
+
+  const getDeclineText = () => {
+    if (isDelete) return 'No, Keep It';
+    return 'No, Keep Running';
+  };
+  
+  return (
+    <div className="confirm-overlay" onClick={onCancel}>
+      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3 className={getTitleClass()}>
+          {getTitle()}
+        </h3>
+        <p className="confirm-message">
+          {getMessage()}
+        </p>
+        <div className="confirm-details">
+          <div className="detail-row">
+            <span className="label">Workflow:</span>
+            <span className="value">{workflowName}</span>
+          </div>
+          <div className="detail-row">
+            <span className="label">Run ID:</span>
+            <span className="value monospace">{runId}</span>
+          </div>
+        </div>
+        {error && (
+          <div className="confirm-error">
+            Error: {error}
+          </div>
+        )}
+        <div className="confirm-actions">
+          <button
+            onClick={onCancel}
+            className="confirm-button confirm-no"
+            disabled={isLoading}
+          >
+            {getDeclineText()}
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`confirm-button ${getConfirmButtonClass()}`}
+            disabled={isLoading}
+          >
+            {getConfirmText()}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper function to check if status is terminal
+function isTerminalStatus(status: string): boolean {
+  const lower = status.toLowerCase();
+  return (
+    lower.includes('completed') ||
+    lower.includes('failed') ||
+    lower.includes('cancelled') ||
+    lower.includes('canceled') ||
+    lower.includes('aborted')
   );
 }
 

@@ -7,11 +7,11 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Agents.AI.Workflows;
-using Microsoft.Extensions.AI;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Streaming;
+using Microsoft.Agents.AI.Workflows;
+using Microsoft.Extensions.AI;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 

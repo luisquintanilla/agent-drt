@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -113,146 +113,146 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public WorkflowMetrics()
     {
-        _workflowMeter = new Meter(TelemetryConstants.WorkflowMeterName, "1.0.0");
-        _workerMeter = new Meter(TelemetryConstants.WorkerMeterName, "1.0.0");
+        this._workflowMeter = new Meter(TelemetryConstants.WorkflowMeterName, "1.0.0");
+        this._workerMeter = new Meter(TelemetryConstants.WorkerMeterName, "1.0.0");
 
         // Workflow Counters
-        WorkflowRunsTotal = _workflowMeter.CreateCounter<long>(
+        this.WorkflowRunsTotal = this._workflowMeter.CreateCounter<long>(
             "workflow.runs.total",
             unit: "{runs}",
             description: "Total number of workflow runs started");
 
-        WorkflowRunsCompleted = _workflowMeter.CreateCounter<long>(
+        this.WorkflowRunsCompleted = this._workflowMeter.CreateCounter<long>(
             "workflow.runs.completed",
             unit: "{runs}",
             description: "Total number of workflow runs completed successfully");
 
-        WorkflowRunsFailed = _workflowMeter.CreateCounter<long>(
+        this.WorkflowRunsFailed = this._workflowMeter.CreateCounter<long>(
             "workflow.runs.failed",
             unit: "{runs}",
             description: "Total number of workflow runs that failed");
 
-        WorkflowRunsCancelled = _workflowMeter.CreateCounter<long>(
+        this.WorkflowRunsCancelled = this._workflowMeter.CreateCounter<long>(
             "workflow.runs.cancelled",
             unit: "{runs}",
             description: "Total number of workflow runs cancelled");
 
-        WorkflowRunsAborted = _workflowMeter.CreateCounter<long>(
+        this.WorkflowRunsAborted = this._workflowMeter.CreateCounter<long>(
             "workflow.runs.aborted",
             unit: "{runs}",
             description: "Total number of workflow runs aborted");
 
-        WorkflowStepsTotal = _workflowMeter.CreateCounter<long>(
+        this.WorkflowStepsTotal = this._workflowMeter.CreateCounter<long>(
             "workflow.steps.total",
             unit: "{steps}",
             description: "Total number of workflow steps executed");
 
-        SignalsProcessed = _workflowMeter.CreateCounter<long>(
+        this.SignalsProcessed = this._workflowMeter.CreateCounter<long>(
             "workflow.signals.processed",
             unit: "{signals}",
             description: "Total number of signals processed");
 
-        CheckpointsSaved = _workflowMeter.CreateCounter<long>(
+        this.CheckpointsSaved = this._workflowMeter.CreateCounter<long>(
             "workflow.checkpoints.saved",
             unit: "{checkpoints}",
             description: "Total number of checkpoints saved");
 
-        ArtifactsCreated = _workflowMeter.CreateCounter<long>(
+        this.ArtifactsCreated = this._workflowMeter.CreateCounter<long>(
             "workflow.artifacts.created",
             unit: "{artifacts}",
             description: "Total number of artifacts created");
 
         // Workflow Gauges
-        ActiveWorkflowRuns = _workflowMeter.CreateUpDownCounter<long>(
+        this.ActiveWorkflowRuns = this._workflowMeter.CreateUpDownCounter<long>(
             "workflow.runs.active",
             unit: "{runs}",
             description: "Number of currently active workflow runs");
 
-        WorkflowsWaitingForSignal = _workflowMeter.CreateUpDownCounter<long>(
+        this.WorkflowsWaitingForSignal = this._workflowMeter.CreateUpDownCounter<long>(
             "workflow.runs.waiting_for_signal",
             unit: "{runs}",
             description: "Number of workflows waiting for external signals");
 
-        PendingSignalRequests = _workflowMeter.CreateUpDownCounter<long>(
+        this.PendingSignalRequests = this._workflowMeter.CreateUpDownCounter<long>(
             "workflow.signals.pending",
             unit: "{requests}",
             description: "Number of pending signal requests");
 
         // Workflow Histograms
-        WorkflowRunDuration = _workflowMeter.CreateHistogram<double>(
+        this.WorkflowRunDuration = this._workflowMeter.CreateHistogram<double>(
             "workflow.run.duration",
             unit: "ms",
             description: "Duration of workflow runs in milliseconds");
 
-        WorkflowStepDuration = _workflowMeter.CreateHistogram<double>(
+        this.WorkflowStepDuration = this._workflowMeter.CreateHistogram<double>(
             "workflow.step.duration",
             unit: "ms",
             description: "Duration of workflow steps in milliseconds");
 
-        SignalWaitTime = _workflowMeter.CreateHistogram<double>(
+        this.SignalWaitTime = this._workflowMeter.CreateHistogram<double>(
             "workflow.signal.wait_time",
             unit: "ms",
             description: "Time spent waiting for signals in milliseconds");
 
-        CheckpointSize = _workflowMeter.CreateHistogram<long>(
+        this.CheckpointSize = this._workflowMeter.CreateHistogram<long>(
             "workflow.checkpoint.size",
             unit: "By",
             description: "Size of workflow checkpoints in bytes");
 
         // Worker Counters
-        WorkerDispatchesTotal = _workerMeter.CreateCounter<long>(
+        this.WorkerDispatchesTotal = this._workerMeter.CreateCounter<long>(
             "worker.dispatches.total",
             unit: "{dispatches}",
             description: "Total number of workflow dispatches to workers");
 
-        WorkerDispatchesFailed = _workerMeter.CreateCounter<long>(
+        this.WorkerDispatchesFailed = this._workerMeter.CreateCounter<long>(
             "worker.dispatches.failed",
             unit: "{dispatches}",
             description: "Total number of failed workflow dispatches");
 
-        WorkerHealthChecksTotal = _workerMeter.CreateCounter<long>(
+        this.WorkerHealthChecksTotal = this._workerMeter.CreateCounter<long>(
             "worker.health_checks.total",
             unit: "{checks}",
             description: "Total number of worker health checks");
 
-        WorkerHealthChecksFailed = _workerMeter.CreateCounter<long>(
+        this.WorkerHealthChecksFailed = this._workerMeter.CreateCounter<long>(
             "worker.health_checks.failed",
             unit: "{checks}",
             description: "Total number of failed worker health checks");
 
-        WorkerRegistrations = _workerMeter.CreateCounter<long>(
+        this.WorkerRegistrations = this._workerMeter.CreateCounter<long>(
             "worker.registrations.total",
             unit: "{registrations}",
             description: "Total number of worker registrations");
 
-        WorkerDeregistrations = _workerMeter.CreateCounter<long>(
+        this.WorkerDeregistrations = this._workerMeter.CreateCounter<long>(
             "worker.deregistrations.total",
             unit: "{deregistrations}",
             description: "Total number of worker deregistrations");
 
         // Worker Gauges
-        RegisteredWorkers = _workerMeter.CreateUpDownCounter<long>(
+        this.RegisteredWorkers = this._workerMeter.CreateUpDownCounter<long>(
             "worker.registered",
             unit: "{workers}",
             description: "Number of registered workers");
 
-        HealthyWorkers = _workerMeter.CreateUpDownCounter<long>(
+        this.HealthyWorkers = this._workerMeter.CreateUpDownCounter<long>(
             "worker.healthy",
             unit: "{workers}",
             description: "Number of healthy workers");
 
-        DrainedWorkers = _workerMeter.CreateUpDownCounter<long>(
+        this.DrainedWorkers = this._workerMeter.CreateUpDownCounter<long>(
             "worker.drained",
             unit: "{workers}",
             description: "Number of drained workers");
 
         // Worker Histograms
-        WorkerDispatchLatency = _workerMeter.CreateHistogram<double>(
+        this.WorkerDispatchLatency = this._workerMeter.CreateHistogram<double>(
             "worker.dispatch.latency",
             unit: "ms",
             description: "Latency of worker dispatches in milliseconds");
 
-        WorkerHealthCheckLatency = _workerMeter.CreateHistogram<double>(
+        this.WorkerHealthCheckLatency = this._workerMeter.CreateHistogram<double>(
             "worker.health_check.latency",
             unit: "ms",
             description: "Latency of worker health checks in milliseconds");
@@ -263,8 +263,8 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkflowStarted(string workflowName)
     {
-        WorkflowRunsTotal.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
-        ActiveWorkflowRuns.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.WorkflowRunsTotal.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.ActiveWorkflowRuns.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
     }
 
     /// <summary>
@@ -272,9 +272,9 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkflowCompleted(string workflowName, double durationMs)
     {
-        WorkflowRunsCompleted.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
-        ActiveWorkflowRuns.Add(-1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
-        WorkflowRunDuration.Record(durationMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.WorkflowRunsCompleted.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.ActiveWorkflowRuns.Add(-1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.WorkflowRunDuration.Record(durationMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
     }
 
     /// <summary>
@@ -282,11 +282,11 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkflowFailed(string workflowName, string errorCode, double durationMs)
     {
-        WorkflowRunsFailed.Add(1,
+        this.WorkflowRunsFailed.Add(1,
             new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName),
             new KeyValuePair<string, object?>(TelemetryConstants.WorkflowErrorCode, errorCode));
-        ActiveWorkflowRuns.Add(-1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
-        WorkflowRunDuration.Record(durationMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.ActiveWorkflowRuns.Add(-1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.WorkflowRunDuration.Record(durationMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
     }
 
     /// <summary>
@@ -294,7 +294,7 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkflowWaitingForSignal(string workflowName)
     {
-        WorkflowsWaitingForSignal.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.WorkflowsWaitingForSignal.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
     }
 
     /// <summary>
@@ -302,8 +302,8 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkflowResumedFromSignal(string workflowName, double waitTimeMs)
     {
-        WorkflowsWaitingForSignal.Add(-1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
-        SignalWaitTime.Record(waitTimeMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.WorkflowsWaitingForSignal.Add(-1, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
+        this.SignalWaitTime.Record(waitTimeMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
     }
 
     /// <summary>
@@ -311,10 +311,10 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordStepExecution(string workflowName, string stepName, double durationMs)
     {
-        WorkflowStepsTotal.Add(1,
+        this.WorkflowStepsTotal.Add(1,
             new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName),
             new KeyValuePair<string, object?>(TelemetryConstants.StepName, stepName));
-        WorkflowStepDuration.Record(durationMs,
+        this.WorkflowStepDuration.Record(durationMs,
             new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName),
             new KeyValuePair<string, object?>(TelemetryConstants.StepName, stepName));
     }
@@ -324,18 +324,18 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkerDispatch(string workerId, string workflowName, bool success, double latencyMs)
     {
-        WorkerDispatchesTotal.Add(1,
+        this.WorkerDispatchesTotal.Add(1,
             new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId),
             new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
 
         if (!success)
         {
-            WorkerDispatchesFailed.Add(1,
+            this.WorkerDispatchesFailed.Add(1,
                 new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId),
                 new KeyValuePair<string, object?>(TelemetryConstants.WorkflowName, workflowName));
         }
 
-        WorkerDispatchLatency.Record(latencyMs,
+        this.WorkerDispatchLatency.Record(latencyMs,
             new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
     }
 
@@ -344,8 +344,8 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkerRegistration(string workerId)
     {
-        WorkerRegistrations.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
-        RegisteredWorkers.Add(1);
+        this.WorkerRegistrations.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
+        this.RegisteredWorkers.Add(1);
     }
 
     /// <summary>
@@ -353,8 +353,8 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkerDeregistration(string workerId)
     {
-        WorkerDeregistrations.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
-        RegisteredWorkers.Add(-1);
+        this.WorkerDeregistrations.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
+        this.RegisteredWorkers.Add(-1);
     }
 
     /// <summary>
@@ -362,20 +362,20 @@ public sealed class WorkflowMetrics : IDisposable
     /// </summary>
     public void RecordWorkerHealthCheck(string workerId, bool healthy, double latencyMs)
     {
-        WorkerHealthChecksTotal.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
+        this.WorkerHealthChecksTotal.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
 
         if (!healthy)
         {
-            WorkerHealthChecksFailed.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
+            this.WorkerHealthChecksFailed.Add(1, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
         }
 
-        WorkerHealthCheckLatency.Record(latencyMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
+        this.WorkerHealthCheckLatency.Record(latencyMs, new KeyValuePair<string, object?>(TelemetryConstants.WorkerId, workerId));
     }
 
     /// <inheritdoc/>
     public void Dispose()
     {
-        _workflowMeter.Dispose();
-        _workerMeter.Dispose();
+        this._workflowMeter.Dispose();
+        this._workerMeter.Dispose();
     }
 }

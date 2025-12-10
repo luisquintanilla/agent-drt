@@ -1,6 +1,5 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
-using System.Text.Json;
 using AgentContracts.Workflows;
 using AgentGateway.Workflows;
 
@@ -16,7 +15,7 @@ public sealed class WorkflowGrainTests
 
     public WorkflowGrainTests(OrleansTestClusterFixture fixture)
     {
-        _fixture = fixture;
+        this._fixture = fixture;
     }
 
     private static string NewRunId() => $"test-run-{Guid.NewGuid():N}";
@@ -43,7 +42,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         var request = CreateStartRequest();
 
         // Act
@@ -65,7 +64,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         // Act & Assert
@@ -79,8 +78,8 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
-        var indexGrain = _fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>("default");
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var indexGrain = this._fixture.GrainFactory.GetGrain<IWorkflowIndexGrain>("default");
         var request = CreateStartRequest("IndexTestWorkflow");
 
         // Act
@@ -103,7 +102,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
 
         // Act
         var result = await grain.GetAsync(CancellationToken.None);
@@ -117,7 +116,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         // Act
@@ -139,7 +138,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         var startResult = await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
         var originalETag = startResult.ETag;
 
@@ -164,7 +163,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var update = new WorkflowRunStatusUpdate
@@ -187,7 +186,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
 
         var update = new WorkflowRunStatusUpdate
         {
@@ -219,7 +218,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var step = new WorkflowStepStartedRecord
@@ -249,7 +248,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var startedStep = new WorkflowStepStartedRecord
@@ -292,7 +291,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var request = new PendingExternalRequest
@@ -326,7 +325,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var request = new PendingExternalRequest
@@ -359,7 +358,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var signal = new WorkflowSignal
@@ -383,7 +382,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         // Act
@@ -398,7 +397,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
         await grain.UpdateStatusAsync(new WorkflowRunStatusUpdate { Status = WorkflowRunStatus.Completed }, null, CancellationToken.None);
 
@@ -413,7 +412,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         // Act
@@ -429,7 +428,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
         await grain.AbortAsync("First abort", CancellationToken.None);
 
@@ -448,7 +447,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var checkpoint = new WorkflowCheckpointData
@@ -476,7 +475,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         // Act
@@ -495,7 +494,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var artifact = new WorkflowArtifactRecord
@@ -530,7 +529,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var update = new WorkflowRunStatusUpdate
@@ -560,7 +559,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         var startResult = await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         var update = new WorkflowRunStatusUpdate
@@ -584,7 +583,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
         var startResult = await grain.StartAsync(CreateStartRequest(), CancellationToken.None);
 
         // Act
@@ -599,7 +598,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
 
         // Act
         var etag = await grain.GetETagAsync(CancellationToken.None);
@@ -617,7 +616,7 @@ public sealed class WorkflowGrainTests
     {
         // Arrange
         var runId = NewRunId();
-        var grain = _fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
+        var grain = this._fixture.GrainFactory.GetGrain<IWorkflowGrain>(runId);
 
         // Step 1: Start workflow
         var startResult = await grain.StartAsync(
@@ -688,7 +687,7 @@ public sealed class WorkflowGrainTests
             CancellationToken.None);
 
         // Step 7: Request human approval (HITL)
-        etag = await grain.RecordPendingRequestAsync(
+        _ = await grain.RecordPendingRequestAsync(
             new PendingExternalRequest
             {
                 RequestId = "approval-req-1",

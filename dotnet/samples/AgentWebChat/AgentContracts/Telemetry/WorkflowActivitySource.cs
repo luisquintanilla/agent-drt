@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Diagnostics;
@@ -217,7 +217,10 @@ public static class WorkflowActivitySource
     /// </summary>
     public static void RecordException(Activity? activity, Exception exception)
     {
-        if (activity == null) return;
+        if (activity == null)
+        {
+            return;
+        }
 
         activity.SetStatus(ActivityStatusCode.Error, exception.Message);
         activity.AddEvent(new ActivityEvent("exception", tags: new ActivityTagsCollection
@@ -233,7 +236,10 @@ public static class WorkflowActivitySource
     /// </summary>
     public static void AddEvent(Activity? activity, string eventName, params (string Key, object? Value)[] tags)
     {
-        if (activity == null) return;
+        if (activity == null)
+        {
+            return;
+        }
 
         var tagCollection = new ActivityTagsCollection();
         foreach (var (key, value) in tags)

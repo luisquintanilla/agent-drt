@@ -3,10 +3,10 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 

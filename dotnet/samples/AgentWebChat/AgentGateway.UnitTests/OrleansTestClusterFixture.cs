@@ -1,8 +1,7 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Orleans.Serialization;
 using Orleans.Storage;

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -30,8 +30,8 @@ internal sealed class WorkflowHostService : IWorkflowHost
         ArgumentNullException.ThrowIfNull(serviceProvider);
         ArgumentNullException.ThrowIfNull(logger);
 
-        _serviceProvider = serviceProvider;
-        _logger = logger;
+        this._serviceProvider = serviceProvider;
+        this._logger = logger;
     }
 
     /// <summary>
@@ -42,8 +42,8 @@ internal sealed class WorkflowHostService : IWorkflowHost
     public void RegisterWorkflow<TWorkflow>(string name) where TWorkflow : IWorkflow
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        _workflowRegistry[name] = typeof(TWorkflow);
-        _logger.LogInformation("Registered workflow: {WorkflowName} -> {WorkflowType}", name, typeof(TWorkflow).Name);
+        this._workflowRegistry[name] = typeof(TWorkflow);
+        this._logger.LogInformation("Registered workflow: {WorkflowName} -> {WorkflowType}", name, typeof(TWorkflow).Name);
     }
 
     /// <inheritdoc/>
@@ -52,7 +52,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return ExecuteInternalAsync(request, cancellationToken);
+        return this.ExecuteInternalAsync(request, cancellationToken);
     }
 
     private async IAsyncEnumerable<WorkflowStatusEvent> ExecuteInternalAsync(
@@ -61,13 +61,13 @@ internal sealed class WorkflowHostService : IWorkflowHost
     {
         using var activity = WorkflowActivitySource.StartWorkflowExecution(request.RunId, request.WorkflowName, ActivityKind.Server);
 
-        _logger.LogInformation("Starting workflow execution: {RunId} (workflow: {WorkflowName})",
+        this._logger.LogInformation("Starting workflow execution: {RunId} (workflow: {WorkflowName})",
             request.RunId, request.WorkflowName);
 
         // Resolve workflow type
-        if (!_workflowRegistry.TryGetValue(request.WorkflowName, out var workflowType))
+        if (!this._workflowRegistry.TryGetValue(request.WorkflowName, out var workflowType))
         {
-            _logger.LogError("Unknown workflow: {WorkflowName}", request.WorkflowName);
+            this._logger.LogError("Unknown workflow: {WorkflowName}", request.WorkflowName);
             WorkflowActivitySource.RecordException(activity, new InvalidOperationException($"Unknown workflow: '{request.WorkflowName}'"));
             yield return new WorkflowFailedEvent
             {
@@ -93,13 +93,13 @@ internal sealed class WorkflowHostService : IWorkflowHost
             request.Input,
             stateClient,
             request.Options,
-            _logger);
+            this._logger);
 
         // Use a channel to safely collect events from the workflow
         var channel = Channel.CreateUnbounded<WorkflowStatusEvent>();
 
         // Execute workflow in background and write to channel
-        var executionTask = ExecuteWorkflowCoreAsync(
+        var executionTask = this.ExecuteWorkflowCoreAsync(
             request,
             workflowType,
             context,
@@ -128,7 +128,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         IWorkflow? workflow = null;
         try
         {
-            workflow = (IWorkflow)ActivatorUtilities.CreateInstance(_serviceProvider, workflowType);
+            workflow = (IWorkflow)ActivatorUtilities.CreateInstance(this._serviceProvider, workflowType);
 
             // Update status to Running
             await stateClient.UpdateStatusAsync(
@@ -160,9 +160,9 @@ internal sealed class WorkflowHostService : IWorkflowHost
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Workflow cancelled: {RunId}", request.RunId);
+            this._logger.LogInformation("Workflow cancelled: {RunId}", request.RunId);
 
-            await SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Cancelled);
+            await this.SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Cancelled);
 
             await writer.WriteAsync(new WorkflowCancelledEvent
             {
@@ -173,7 +173,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Workflow failed: {RunId}", request.RunId);
+            this._logger.LogError(ex, "Workflow failed: {RunId}", request.RunId);
 
             var errorInfo = new WorkflowErrorInfo
             {
@@ -182,7 +182,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
                 StackTrace = ex.StackTrace
             };
 
-            await SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Failed, errorInfo);
+            await this.SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Failed, errorInfo);
 
             await writer.WriteAsync(new WorkflowFailedEvent
             {
@@ -214,7 +214,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return ResumeInternalAsync(request, cancellationToken);
+        return this.ResumeInternalAsync(request, cancellationToken);
     }
 
     private async IAsyncEnumerable<WorkflowStatusEvent> ResumeInternalAsync(
@@ -223,13 +223,13 @@ internal sealed class WorkflowHostService : IWorkflowHost
     {
         using var activity = WorkflowActivitySource.StartWorkflowResume(request.RunId, request.WorkflowName, request.Signal.RequestId);
 
-        _logger.LogInformation("Resuming workflow: {RunId} with signal for request {RequestId}",
+        this._logger.LogInformation("Resuming workflow: {RunId} with signal for request {RequestId}",
             request.RunId, request.Signal.RequestId);
 
         // Resolve workflow type
-        if (!_workflowRegistry.TryGetValue(request.WorkflowName, out var workflowType))
+        if (!this._workflowRegistry.TryGetValue(request.WorkflowName, out var workflowType))
         {
-            _logger.LogError("Unknown workflow: {WorkflowName}", request.WorkflowName);
+            this._logger.LogError("Unknown workflow: {WorkflowName}", request.WorkflowName);
             WorkflowActivitySource.RecordException(activity, new InvalidOperationException($"Unknown workflow: '{request.WorkflowName}'"));
             yield return new WorkflowFailedEvent
             {
@@ -252,7 +252,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         var channel = Channel.CreateUnbounded<WorkflowStatusEvent>();
 
         // Execute resume in background and write to channel
-        var resumeTask = ResumeWorkflowCoreAsync(
+        var resumeTask = this.ResumeWorkflowCoreAsync(
             request,
             workflowType,
             stateClient,
@@ -295,7 +295,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         IWorkflow? workflow = null;
         try
         {
-            workflow = (IWorkflow)ActivatorUtilities.CreateInstance(_serviceProvider, workflowType);
+            workflow = (IWorkflow)ActivatorUtilities.CreateInstance(this._serviceProvider, workflowType);
 
             // Create resume context
             var context = new WorkflowResumeContext(
@@ -304,7 +304,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
                 request.Signal,
                 checkpoint?.Checkpoint,
                 stateClient,
-                _logger);
+                this._logger);
 
             // Update status to Running
             await stateClient.UpdateStatusAsync(
@@ -343,9 +343,9 @@ internal sealed class WorkflowHostService : IWorkflowHost
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Workflow resume cancelled: {RunId}", request.RunId);
+            this._logger.LogInformation("Workflow resume cancelled: {RunId}", request.RunId);
 
-            await SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Cancelled);
+            await this.SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Cancelled);
 
             await writer.WriteAsync(new WorkflowCancelledEvent
             {
@@ -356,7 +356,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Workflow resume failed: {RunId}", request.RunId);
+            this._logger.LogError(ex, "Workflow resume failed: {RunId}", request.RunId);
 
             var errorInfo = new WorkflowErrorInfo
             {
@@ -365,7 +365,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
                 StackTrace = ex.StackTrace
             };
 
-            await SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Failed, errorInfo);
+            await this.SafeUpdateStatusAsync(stateClient, request.RunId, WorkflowRunStatus.Failed, errorInfo);
 
             await writer.WriteAsync(new WorkflowFailedEvent
             {
@@ -411,7 +411,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update workflow status to {Status}: {RunId}", status, runId);
+            this._logger.LogError(ex, "Failed to update workflow status to {Status}: {RunId}", status, runId);
         }
     }
 
@@ -419,7 +419,7 @@ internal sealed class WorkflowHostService : IWorkflowHost
     public Task<IReadOnlyList<WorkflowDefinitionInfo>> GetAvailableWorkflowsAsync(
         CancellationToken cancellationToken = default)
     {
-        var workflows = _workflowRegistry.Select(kvp => new WorkflowDefinitionInfo
+        var workflows = this._workflowRegistry.Select(kvp => new WorkflowDefinitionInfo
         {
             Name = kvp.Key,
             DisplayName = kvp.Value.Name,
@@ -502,12 +502,12 @@ public sealed class WorkflowExecutionContext
         IReadOnlyDictionary<string, string>? options,
         ILogger logger)
     {
-        RunId = runId;
-        WorkflowName = workflowName;
-        Input = input;
-        StateService = stateService;
-        Options = options;
-        Logger = logger;
+        this.RunId = runId;
+        this.WorkflowName = workflowName;
+        this.Input = input;
+        this.StateService = stateService;
+        this.Options = options;
+        this.Logger = logger;
     }
 }
 
@@ -554,11 +554,11 @@ public sealed class WorkflowResumeContext
         IWorkflowStateService stateService,
         ILogger logger)
     {
-        RunId = runId;
-        WorkflowName = workflowName;
-        Signal = signal;
-        Checkpoint = checkpoint;
-        StateService = stateService;
-        Logger = logger;
+        this.RunId = runId;
+        this.WorkflowName = workflowName;
+        this.Signal = signal;
+        this.Checkpoint = checkpoint;
+        this.StateService = stateService;
+        this.Logger = logger;
     }
 }

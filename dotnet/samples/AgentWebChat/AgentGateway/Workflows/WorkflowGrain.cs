@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -515,6 +515,36 @@ internal sealed class WorkflowGrain(
         workflowState.State.AssignedWorkerId = workerId;
         await workflowState.WriteStateAsync(cancellationToken);
         logger.LogDebug("Workflow '{RunId}' assigned to worker '{WorkerId}'", this.RunId, workerId);
+    }
+
+    public async Task DeleteAsync(CancellationToken cancellationToken)
+    {
+        using var activity = WorkflowActivitySource.StartGrainOperation("delete", "WorkflowGrain", this.RunId);
+
+        this.EnsureRunExists();
+
+        // Only allow deletion of workflows in terminal status
+        if (!IsTerminalStatus(workflowState.State.Run!.Status))
+        {
+            throw new InvalidOperationException(
+                $"Cannot delete workflow '{this.RunId}' - it is in status '{workflowState.State.Run.Status}'. " +
+                "Only workflows in terminal status (Completed, Cancelled, Aborted, Failed) can be deleted.");
+        }
+
+        // Remove from the workflow index
+        var indexGrain = grainFactory.GetGrain<IWorkflowIndexGrain>("default");
+        await indexGrain.RemoveAsync(this.RunId, cancellationToken);
+
+        // Unregister any reminders
+        await this.UnregisterReminderIfExistsAsync();
+
+        // Clear the persistent state
+        await workflowState.ClearStateAsync(cancellationToken);
+
+        logger.LogInformation("Workflow '{RunId}' deleted", this.RunId);
+
+        // Deactivate the grain
+        this.DeactivateOnIdle();
     }
 
     // ============ IRemindable ============

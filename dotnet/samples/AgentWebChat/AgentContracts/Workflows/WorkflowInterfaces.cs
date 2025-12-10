@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -220,9 +220,9 @@ public class WorkflowConcurrencyException : Exception
     public WorkflowConcurrencyException(string runId, string? expectedETag, string? actualETag)
         : base($"Concurrency conflict for workflow '{runId}'. Expected ETag '{expectedETag}', but was '{actualETag}'.")
     {
-        RunId = runId;
-        ExpectedETag = expectedETag;
-        ActualETag = actualETag;
+        this.RunId = runId;
+        this.ExpectedETag = expectedETag;
+        this.ActualETag = actualETag;
     }
 }
 

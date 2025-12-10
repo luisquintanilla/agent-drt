@@ -132,6 +132,47 @@ class MonitoringApiClient {
       throw error;
     }
   }
+
+  /**
+   * Request cooperative cancellation of a workflow.
+   * The workflow will be notified and given a chance to clean up.
+   */
+  async cancelWorkflow(runId: string): Promise<WorkflowRun> {
+    return this.request<WorkflowRun>(
+      `${WORKFLOWS_URL}/${encodeURIComponent(runId)}/cancel`,
+      { method: 'POST' }
+    );
+  }
+
+  /**
+   * Forcefully abort a workflow immediately.
+   * This is an administrative action that stops the workflow without cleanup.
+   */
+  async abortWorkflow(runId: string, reason?: string): Promise<WorkflowRun> {
+    return this.request<WorkflowRun>(
+      `${WORKFLOWS_URL}/${encodeURIComponent(runId)}/abort`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ reason: reason || 'Aborted via monitoring dashboard' }),
+      }
+    );
+  }
+
+  /**
+   * Permanently delete a workflow run.
+   * Only allowed for workflows in terminal status (Completed, Cancelled, Aborted, Failed).
+   */
+  async deleteWorkflow(runId: string): Promise<void> {
+    const response = await fetch(
+      `${WORKFLOWS_URL}/${encodeURIComponent(runId)}`,
+      { method: 'DELETE' }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API Error ${response.status}: ${errorText}`);
+    }
+  }
 }
 
 // Singleton instance

@@ -1,20 +1,21 @@
+﻿// Copyright (c) Microsoft. All rights reserved.
+
 using System;
 using System.Net.Http;
 using AgentContracts;
 using AgentContracts.Monitoring;
-using AgentContracts.Telemetry;
-using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 using AgentGateway;
 using AgentGateway.Conversations;
 using AgentGateway.DevUI;
 using AgentGateway.Health;
 using AgentGateway.Monitoring;
-using AgentGateway.Workflows;
-using AgentGateway.Telemetry;
-using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using AgentGateway.Responses;
+using AgentGateway.Telemetry;
 using AgentGateway.Utilities;
+using AgentGateway.Workflows;
 using Microsoft.Agents.AI.DevUI;
+using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
+using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.AI;
@@ -24,9 +25,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Configuration;
+using Orleans.Hosting;
 using Orleans.Serialization;
 using Orleans.Storage;
-using Orleans.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 

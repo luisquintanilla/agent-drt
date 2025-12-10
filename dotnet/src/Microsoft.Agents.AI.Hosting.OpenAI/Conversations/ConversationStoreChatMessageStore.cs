@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.AI;
-using Microsoft.Shared.Diagnostics;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
+using Microsoft.Extensions.AI;
+using Microsoft.Shared.Diagnostics;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 

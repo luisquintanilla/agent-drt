@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using AgentContracts;
 using AgentWebChat.AgentHost;
@@ -161,7 +161,7 @@ builder.Services.AddKeyedSingleton<AIAgent>("my-di-matchingname-agent", (sp, nam
 });
 
 // Register HITL Workflow Host Service and Marketing Content Workflow
-builder.Services.AddSingleton<WorkflowHostService>(sp =>
+builder.Services.AddSingleton(sp =>
 {
     var host = new WorkflowHostService(
         sp,

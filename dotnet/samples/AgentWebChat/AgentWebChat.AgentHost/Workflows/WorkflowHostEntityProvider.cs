@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -16,13 +16,13 @@ internal sealed class WorkflowHostEntityProvider : IEntityProvider
 
     public WorkflowHostEntityProvider(WorkflowHostService workflowHost)
     {
-        _workflowHost = workflowHost;
+        this._workflowHost = workflowHost;
     }
 
     /// <inheritdoc/>
     public async IAsyncEnumerable<EntityInfo> GetEntitiesAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var workflows = await _workflowHost.GetAvailableWorkflowsAsync(cancellationToken);
+        var workflows = await this._workflowHost.GetAvailableWorkflowsAsync(cancellationToken);
 
         foreach (var workflow in workflows)
         {
@@ -33,7 +33,7 @@ internal sealed class WorkflowHostEntityProvider : IEntityProvider
     /// <inheritdoc/>
     public async Task<EntityInfo?> GetEntityAsync(string entityId, CancellationToken cancellationToken = default)
     {
-        var workflows = await _workflowHost.GetAvailableWorkflowsAsync(cancellationToken);
+        var workflows = await this._workflowHost.GetAvailableWorkflowsAsync(cancellationToken);
 
         var workflow = workflows.FirstOrDefault(w =>
             string.Equals(w.Name, entityId, StringComparison.OrdinalIgnoreCase));

@@ -1,17 +1,13 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 using AgentContracts.Monitoring;
-using AgentContracts.Workflows;
 using Microsoft.Extensions.Logging;
-using Orleans;
 
 namespace AgentGateway.Monitoring;
 
@@ -25,19 +21,19 @@ internal sealed class MonitoringEventBroadcaster : IMonitoringEventBroadcaster
 
     public MonitoringEventBroadcaster(ILogger<MonitoringEventBroadcaster> logger)
     {
-        _logger = logger;
+        this._logger = logger;
     }
 
     /// <inheritdoc/>
     public void PublishEvent(MonitoringEvent evt)
     {
-        _logger.LogDebug("Broadcasting monitoring event: {EventType}", evt.EventType);
+        this._logger.LogDebug("Broadcasting monitoring event: {EventType}", evt.EventType);
 
-        foreach (var (subscriberId, channel) in _subscribers)
+        foreach (var (subscriberId, channel) in this._subscribers)
         {
             if (!channel.Writer.TryWrite(evt))
             {
-                _logger.LogWarning("Failed to write event to subscriber {SubscriberId} - channel may be full", subscriberId);
+                this._logger.LogWarning("Failed to write event to subscriber {SubscriberId} - channel may be full", subscriberId);
             }
         }
     }
@@ -52,7 +48,7 @@ internal sealed class MonitoringEventBroadcaster : IMonitoringEventBroadcaster
             Payload = payload,
             CorrelationId = payload.RunId
         };
-        PublishEvent(evt);
+        this.PublishEvent(evt);
     }
 
     /// <inheritdoc/>
@@ -65,7 +61,7 @@ internal sealed class MonitoringEventBroadcaster : IMonitoringEventBroadcaster
             Payload = payload,
             CorrelationId = payload.WorkerId
         };
-        PublishEvent(evt);
+        this.PublishEvent(evt);
     }
 
     /// <inheritdoc/>
@@ -79,8 +75,8 @@ internal sealed class MonitoringEventBroadcaster : IMonitoringEventBroadcaster
             SingleWriter = false
         });
 
-        _subscribers[subscriberId] = channel;
-        _logger.LogDebug("Subscriber {SubscriberId} connected", subscriberId);
+        this._subscribers[subscriberId] = channel;
+        this._logger.LogDebug("Subscriber {SubscriberId} connected", subscriberId);
 
         try
         {
@@ -91,13 +87,13 @@ internal sealed class MonitoringEventBroadcaster : IMonitoringEventBroadcaster
         }
         finally
         {
-            _subscribers.TryRemove(subscriberId, out _);
-            _logger.LogDebug("Subscriber {SubscriberId} disconnected", subscriberId);
+            this._subscribers.TryRemove(subscriberId, out _);
+            this._logger.LogDebug("Subscriber {SubscriberId} disconnected", subscriberId);
         }
     }
 
     /// <summary>
     /// Gets the current number of active subscribers.
     /// </summary>
-    public int SubscriberCount => _subscribers.Count;
+    public int SubscriberCount => this._subscribers.Count;
 }

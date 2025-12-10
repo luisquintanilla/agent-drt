@@ -1,8 +1,7 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,12 +33,12 @@ internal sealed class MonitoringService : IMonitoringService
         IMonitoringEventBroadcaster eventBroadcaster,
         ILogger<MonitoringService> logger)
     {
-        _grainFactory = grainFactory;
-        _workerRegistry = workerRegistry;
-        _discoveryCache = discoveryCache;
-        _eventBroadcaster = eventBroadcaster;
-        _logger = logger;
-        _startTime = DateTimeOffset.UtcNow;
+        this._grainFactory = grainFactory;
+        this._workerRegistry = workerRegistry;
+        this._discoveryCache = discoveryCache;
+        this._eventBroadcaster = eventBroadcaster;
+        this._logger = logger;
+        this._startTime = DateTimeOffset.UtcNow;
     }
 
     /// <inheritdoc/>
@@ -47,7 +46,7 @@ internal sealed class MonitoringService : IMonitoringService
     {
         using var activity = WorkflowActivitySource.StartMonitoringOperation("get_system_status");
 
-        var indexGrain = _grainFactory.GetGrain<IWorkflowIndexGrain>("default");
+        var indexGrain = this._grainFactory.GetGrain<IWorkflowIndexGrain>("default");
 
         // Get workflow counts by status
         var allWorkflows = await indexGrain.ListAsync(null, 1000, null, null, cancellationToken);
@@ -63,7 +62,7 @@ internal sealed class MonitoringService : IMonitoringService
         var failedLast24h = workflows.Count(w => w.Status == WorkflowRunStatus.Failed && w.CompletedAt >= last24Hours);
 
         // Get worker counts
-        var workers = _workerRegistry.Entries.ToList();
+        var workers = this._workerRegistry.Entries.ToList();
         var healthyWorkers = workers.Count(w => !w.IsDown);
         const int drainedWorkers = 0; // TODO: Track drained state
 
@@ -78,7 +77,7 @@ internal sealed class MonitoringService : IMonitoringService
             RegisteredWorkers = workers.Count,
             HealthyWorkers = healthyWorkers,
             DrainedWorkers = drainedWorkers,
-            Uptime = now - _startTime,
+            Uptime = now - this._startTime,
             Version = GetVersion()
         };
     }
@@ -88,7 +87,7 @@ internal sealed class MonitoringService : IMonitoringService
     {
         using var activity = WorkflowActivitySource.StartMonitoringOperation("get_workers");
 
-        var workers = _workerRegistry.Entries.Select(entry => new WorkerStatus
+        var workers = this._workerRegistry.Entries.Select(entry => new WorkerStatus
         {
             WorkerId = entry.Info.Id,
             Address = entry.Info.Endpoint.ToString(),
@@ -96,8 +95,8 @@ internal sealed class MonitoringService : IMonitoringService
             LastHealthCheck = entry.LastHeartbeat,
             RegisteredAt = entry.LastHeartbeat, // Approximation
             ActiveWorkflows = 0, // TODO: Track per-worker workflow counts
-            SupportedWorkflows = GetSupportedWorkflows(entry.Info.Id),
-            SupportedAgents = GetSupportedAgents(entry.Info.Id),
+            SupportedWorkflows = this.GetSupportedWorkflows(entry.Info.Id),
+            SupportedAgents = this.GetSupportedAgents(entry.Info.Id),
             IsDraining = false // TODO: Track drained state
         }).ToList();
 
@@ -110,7 +109,7 @@ internal sealed class MonitoringService : IMonitoringService
         using var activity = WorkflowActivitySource.StartMonitoringOperation("get_worker");
         activity?.SetTag(TelemetryConstants.WorkerId, workerId);
 
-        var entry = _workerRegistry.Entries.FirstOrDefault(e => e.Info.Id == workerId);
+        var entry = this._workerRegistry.Entries.FirstOrDefault(e => e.Info.Id == workerId);
         if (entry is null)
         {
             return Task.FromResult<WorkerStatus?>(null);
@@ -124,8 +123,8 @@ internal sealed class MonitoringService : IMonitoringService
             LastHealthCheck = entry.LastHeartbeat,
             RegisteredAt = entry.LastHeartbeat,
             ActiveWorkflows = 0,
-            SupportedWorkflows = GetSupportedWorkflows(entry.Info.Id),
-            SupportedAgents = GetSupportedAgents(entry.Info.Id),
+            SupportedWorkflows = this.GetSupportedWorkflows(entry.Info.Id),
+            SupportedAgents = this.GetSupportedAgents(entry.Info.Id),
             IsDraining = false
         };
 
@@ -137,7 +136,7 @@ internal sealed class MonitoringService : IMonitoringService
     {
         using var activity = WorkflowActivitySource.StartMonitoringOperation("get_active_workflows");
 
-        var indexGrain = _grainFactory.GetGrain<IWorkflowIndexGrain>("default");
+        var indexGrain = this._grainFactory.GetGrain<IWorkflowIndexGrain>("default");
         var allWorkflows = await indexGrain.ListAsync(null, 1000, null, null, cancellationToken);
 
         var activeStatuses = new[] { WorkflowRunStatus.Running, WorkflowRunStatus.Queued, WorkflowRunStatus.WaitingForSignal, WorkflowRunStatus.Cancelling };
@@ -161,7 +160,7 @@ internal sealed class MonitoringService : IMonitoringService
     {
         using var activity = WorkflowActivitySource.StartMonitoringOperation("get_recent_workflows");
 
-        var indexGrain = _grainFactory.GetGrain<IWorkflowIndexGrain>("default");
+        var indexGrain = this._grainFactory.GetGrain<IWorkflowIndexGrain>("default");
         var allWorkflows = await indexGrain.ListAsync(null, count, null, null, cancellationToken);
 
         return allWorkflows.Data
@@ -210,7 +209,7 @@ internal sealed class MonitoringService : IMonitoringService
     /// <inheritdoc/>
     public IAsyncEnumerable<MonitoringEvent> StreamEventsAsync(CancellationToken cancellationToken = default)
     {
-        return _eventBroadcaster.SubscribeAsync(cancellationToken);
+        return this._eventBroadcaster.SubscribeAsync(cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -220,9 +219,9 @@ internal sealed class MonitoringService : IMonitoringService
         activity?.SetTag(TelemetryConstants.WorkerId, workerId);
 
         // TODO: Implement worker draining
-        _logger.LogInformation("Drain requested for worker {WorkerId}", workerId);
+        this._logger.LogInformation("Drain requested for worker {WorkerId}", workerId);
 
-        _eventBroadcaster.PublishWorkerEvent(MonitoringEventTypes.WorkerDrained, new WorkerEventPayload
+        this._eventBroadcaster.PublishWorkerEvent(MonitoringEventTypes.WorkerDrained, new WorkerEventPayload
         {
             WorkerId = workerId
         });
@@ -237,9 +236,9 @@ internal sealed class MonitoringService : IMonitoringService
         activity?.SetTag(TelemetryConstants.WorkerId, workerId);
 
         // TODO: Implement worker enabling
-        _logger.LogInformation("Enable requested for worker {WorkerId}", workerId);
+        this._logger.LogInformation("Enable requested for worker {WorkerId}", workerId);
 
-        _eventBroadcaster.PublishWorkerEvent(MonitoringEventTypes.WorkerEnabled, new WorkerEventPayload
+        this._eventBroadcaster.PublishWorkerEvent(MonitoringEventTypes.WorkerEnabled, new WorkerEventPayload
         {
             WorkerId = workerId
         });
@@ -249,7 +248,7 @@ internal sealed class MonitoringService : IMonitoringService
 
     private List<string> GetSupportedWorkflows(string workerId)
     {
-        var cached = _discoveryCache.TryGet(workerId);
+        var cached = this._discoveryCache.TryGet(workerId);
         return cached?.Entities?.Values
             .Where(e => string.Equals(e.Type, "workflow", StringComparison.OrdinalIgnoreCase))
             .Select(e => e.Name)
@@ -258,7 +257,7 @@ internal sealed class MonitoringService : IMonitoringService
 
     private List<string> GetSupportedAgents(string workerId)
     {
-        var cached = _discoveryCache.TryGet(workerId);
+        var cached = this._discoveryCache.TryGet(workerId);
         return cached?.Entities?.Values
             .Where(e => string.Equals(e.Type, "agent", StringComparison.OrdinalIgnoreCase))
             .Select(e => e.Name)

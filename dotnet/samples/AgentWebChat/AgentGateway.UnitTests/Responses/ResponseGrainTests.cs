@@ -2,7 +2,6 @@
 
 using AgentGateway.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
-using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
 
 namespace AgentGateway.UnitTests.Responses;

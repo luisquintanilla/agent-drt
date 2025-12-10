@@ -5,11 +5,11 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using AgentGateway.Conversations;
+using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Hosting.OpenAI.Conversations;
 using Microsoft.Agents.AI.Hosting.OpenAI.Models;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
-using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Orleans;
 

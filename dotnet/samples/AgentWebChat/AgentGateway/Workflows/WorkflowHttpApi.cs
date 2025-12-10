@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Text.Json;
@@ -74,6 +74,13 @@ internal static class WorkflowHttpApi
         group.MapPost("/{runId}/abort", AbortWorkflowAsync)
             .WithName("AbortWorkflow")
             .Produces<WorkflowRun>()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
+
+        // DELETE /v1/workflows/{runId} - Permanently delete a workflow
+        group.MapDelete("/{runId}", DeleteWorkflowAsync)
+            .WithName("DeleteWorkflow")
+            .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
@@ -439,6 +446,46 @@ internal static class WorkflowHttpApi
         {
             return Results.Problem(
                 title: "Cannot abort workflow",
+                detail: ex.Message,
+                statusCode: StatusCodes.Status409Conflict);
+        }
+    }
+
+    private static async Task<IResult> DeleteWorkflowAsync(
+        string runId,
+        IGrainFactory grainFactory,
+        ILogger<Program> logger,
+        CancellationToken ct)
+    {
+        var grain = grainFactory.GetGrain<IWorkflowGrain>(runId);
+
+        try
+        {
+            // Check if workflow exists first
+            var run = await grain.GetAsync(ct);
+            if (run is null)
+            {
+                return Results.Problem(
+                    title: "Workflow not found",
+                    detail: $"Workflow '{runId}' not found.",
+                    statusCode: StatusCodes.Status404NotFound);
+            }
+
+            await grain.DeleteAsync(ct);
+            logger.LogInformation("Workflow deleted: {RunId}", runId);
+            return Results.NoContent();
+        }
+        catch (WorkflowNotFoundException)
+        {
+            return Results.Problem(
+                title: "Workflow not found",
+                detail: $"Workflow '{runId}' not found.",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.Problem(
+                title: "Cannot delete workflow",
                 detail: ex.Message,
                 statusCode: StatusCodes.Status409Conflict);
         }

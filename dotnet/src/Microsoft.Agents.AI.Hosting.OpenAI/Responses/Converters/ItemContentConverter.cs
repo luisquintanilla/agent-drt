@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System;
-using Microsoft.Extensions.AI;
 using Microsoft.Agents.AI.Hosting.OpenAI.Responses.Models;
+using Microsoft.Extensions.AI;
 
 namespace Microsoft.Agents.AI.Hosting.OpenAI.Responses.Converters;
 

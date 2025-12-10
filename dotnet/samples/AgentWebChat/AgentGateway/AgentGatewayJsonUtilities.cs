@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -7,8 +7,8 @@ using System.Text.Json.Serialization;
 using AgentGateway.Conversations;
 using AgentGateway.Responses;
 using AgentGateway.Workflows;
-using Microsoft.Agents.AI.Hosting.OpenAI;
 using Microsoft.Agents.AI.DevUI.Entities;
+using Microsoft.Agents.AI.Hosting.OpenAI;
 
 namespace AgentGateway;
 
