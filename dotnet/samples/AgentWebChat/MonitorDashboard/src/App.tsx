@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  WorkerListWidget,
-  WorkflowsWidget,
-  WorkflowDetailModal,
-  EventFeedWidget,
-} from './components';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Sidebar } from './components';
+import { DashboardPage, WorkersPage, WorkflowsPage } from './pages';
 import { useMonitoringEvents } from './hooks';
 import { monitoringApi } from './api';
 import type {
@@ -183,97 +180,115 @@ export default function App() {
   const uptime = systemStatus?.uptime ? formatUptime(systemStatus.uptime) : null;
 
   return (
-    <div className={`app ${isLightTheme ? 'theme-light' : ''}`}>
-      <header className="app-header">
-        <div className="header-left">
-          <h1>Workflow Monitor</h1>
+    <BrowserRouter>
+      <div className={`app ${isLightTheme ? 'theme-light' : ''}`}>
+        <Sidebar isConnected={isConnected} />
+        
+        <div className="app-main">
+          <header className="app-header">
+            <div className="header-right">
+              <button onClick={toggleTheme} className="header-badge theme-toggle" title="Toggle theme (T)">
+                {isLightTheme ? (
+                  <>
+                    <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                    <span>Dark</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="5" />
+                      <line x1="12" y1="1" x2="12" y2="3" />
+                      <line x1="12" y1="21" x2="12" y2="23" />
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                      <line x1="1" y1="12" x2="3" y2="12" />
+                      <line x1="21" y1="12" x2="23" y2="12" />
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                    <span>Light</span>
+                  </>
+                )}
+              </button>
+              {!isConnected && (
+                <button onClick={reconnect} className="header-badge reconnect-badge">
+                  Reconnect
+                </button>
+              )}
+            </div>
+          </header>
+
+          <main className="app-content">
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <DashboardPage
+                    systemStatus={systemStatus}
+                    workers={workers}
+                    workersError={workersError}
+                    activeWorkflows={activeWorkflows}
+                    recentWorkflows={recentWorkflows}
+                    workflowsError={workflowsError}
+                    isLoading={!initialLoadComplete}
+                    onRefreshWorkers={fetchWorkers}
+                    onRefreshWorkflows={fetchWorkflows}
+                    selectedWorkflowId={selectedWorkflowId}
+                    onSelectWorkflow={handleSelectWorkflow}
+                    onCloseModal={handleCloseModal}
+                    onWorkflowUpdated={refreshAll}
+                    events={events}
+                    isConnected={isConnected}
+                    connectionError={connectionError}
+                    onReconnect={reconnect}
+                    uptime={uptime}
+                  />
+                }
+              />
+              <Route
+                path="/workers"
+                element={
+                  <WorkersPage
+                    workers={workers}
+                    stats={workerStats}
+                    isLoading={!initialLoadComplete}
+                    error={workersError}
+                    onRefresh={fetchWorkers}
+                    events={events}
+                    isConnected={isConnected}
+                    connectionError={connectionError}
+                    onReconnect={reconnect}
+                  />
+                }
+              />
+              <Route
+                path="/workflows"
+                element={
+                  <WorkflowsPage
+                    activeWorkflows={activeWorkflows}
+                    recentWorkflows={recentWorkflows}
+                    stats={workflowStats}
+                    isLoading={!initialLoadComplete}
+                    error={workflowsError}
+                    onRefresh={fetchWorkflows}
+                    selectedWorkflowId={selectedWorkflowId}
+                    onSelectWorkflow={handleSelectWorkflow}
+                    onCloseModal={handleCloseModal}
+                    onWorkflowUpdated={refreshAll}
+                    events={events}
+                    isConnected={isConnected}
+                    connectionError={connectionError}
+                    onReconnect={reconnect}
+                  />
+                }
+              />
+            </Routes>
+          </main>
         </div>
-        <div className="header-right">
-          <button onClick={toggleTheme} className="header-badge theme-toggle" title="Toggle theme (T)">
-            {isLightTheme ? (
-              <>
-                <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-                <span>Dark</span>
-              </>
-            ) : (
-              <>
-                <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="5" />
-                  <line x1="12" y1="1" x2="12" y2="3" />
-                  <line x1="12" y1="21" x2="12" y2="23" />
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                  <line x1="1" y1="12" x2="3" y2="12" />
-                  <line x1="21" y1="12" x2="23" y2="12" />
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                </svg>
-                <span>Light</span>
-              </>
-            )}
-          </button>
-          {uptime && (
-            <span className="header-badge" title="System uptime">
-              up {uptime}
-            </span>
-          )}
-          <div className="header-badge">
-            <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
-            <span>{isConnected ? 'Live' : 'Disconnected'}</span>
-            {!isConnected && (
-              <button onClick={reconnect} className="reconnect-btn">Retry</button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="dashboard">
-        {/* Main Content - Two Panel Layout */}
-        <section className="main-content">
-          <div className="panel workers-panel">
-            <WorkerListWidget
-              workers={workers}
-              stats={workerStats}
-              isLoading={!initialLoadComplete}
-              error={workersError}
-              onRefresh={fetchWorkers}
-            />
-          </div>
-
-          <div className="panel workflows-panel">
-            <WorkflowsWidget
-              activeWorkflows={activeWorkflows}
-              recentWorkflows={recentWorkflows}
-              stats={workflowStats}
-              isLoading={!initialLoadComplete}
-              error={workflowsError}
-              onRefresh={fetchWorkflows}
-              onSelectWorkflow={handleSelectWorkflow}
-            />
-          </div>
-        </section>
-
-        {/* Event Feed */}
-        <section className="events-section">
-          <EventFeedWidget
-            events={events}
-            isConnected={isConnected}
-            connectionError={connectionError}
-            onReconnect={reconnect}
-          />
-        </section>
-      </main>
-
-      {selectedWorkflowId && (
-        <WorkflowDetailModal
-          runId={selectedWorkflowId}
-          onClose={handleCloseModal}
-          onWorkflowUpdated={refreshAll}
-        />
-      )}
-    </div>
+      </div>
+    </BrowserRouter>
   );
 }
 

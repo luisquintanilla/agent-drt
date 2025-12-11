@@ -4,3 +4,4 @@ export { WorkflowsWidget } from './WorkflowsWidget';
 export { WorkflowDetailModal } from './WorkflowDetailModal';
 export { EventFeedWidget } from './EventFeedWidget';
 export { Skeleton, SkeletonMetricRow } from './Skeleton';
+export { Sidebar } from './Sidebar';
