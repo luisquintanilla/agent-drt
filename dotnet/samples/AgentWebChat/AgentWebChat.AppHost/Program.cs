@@ -24,12 +24,12 @@ var gateway = builder.AddProject<Projects.AgentGateway>("gateway")
     .WithReference(chatModel);
 
 // Python agent worker
-var pythonAgent = builder.AddPythonApp(
+var pythonAgent = builder.AddUvicornApp(
     "python-agent",
     "../PythonAgent",
-    "src/agent_worker/main.py")
+    "src.agent_worker.main:app")
     .WithUv()
-    .WithHttpEndpoint(port: 5100, name: "http")
+    .WithEndpoint("http", endpoint => endpoint.Port = 5100)
     .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"));
 
 // Agent host depends on gateway
@@ -37,7 +37,6 @@ var agentHost = builder.AddProject<Projects.AgentWebChat_AgentHost>("agenthost")
     .WithHttpEndpoint(name: "devui")
     .WithUrlForEndpoint("devui", (url) => new() { Url = "/devui", DisplayText = "Dev UI" })
     .WithEnvironment("Worker__GatewayBaseAddress", gateway.GetEndpoint("http")!)
-    .WithReference(pythonAgent)
     .WithReference(chatModel);
 
 // Web front-end depends on gateway (not agent host directly anymore)

@@ -35,7 +35,7 @@ async def health_check():
     return {"status": "healthy"}
 
 
-@app.get("/agents")
+@app.get("/v1/entities")
 async def list_agents() -> list[AgentCard]:
     """
     Agent discovery endpoint.

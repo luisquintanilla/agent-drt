@@ -1,5 +1,7 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
+using System.ClientModel;
+using System.ClientModel.Primitives;
 using AgentContracts;
 using AgentWebChat.AgentHost;
 using AgentWebChat.AgentHost.Custom;
@@ -13,8 +15,6 @@ using Microsoft.Agents.AI.Hosting;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
-using System.ClientModel;
-using System.ClientModel.Primitives;
 using OpenAI;
 using OpenAI.Responses;
 
@@ -135,9 +135,7 @@ var storyWriterAgent = builder.AddAIAgent(
     description: "An agent that writes creative short stories.",
     chatClientServiceKey: "chat-model");
 
-// Python pig latin agent (discovered via gateway)
-// Note: This creates a proxy that calls the Python agent through the gateway
-builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-agent", (sp, key) =>
+builder.AddAIAgent("pig-latin-proxy", (sp, key) =>
 {
     var gatewayUrl = builder.Configuration["Worker:GatewayBaseAddress"];
     if (string.IsNullOrEmpty(gatewayUrl))
@@ -167,12 +165,13 @@ builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-agent", (sp, key) =>
 });
 
 // Polyglot workflow: .NET writes story, Python translates to Pig Latin
+// Note: The pig-latin-agent is registered below but NOT advertised via DevUI to avoid circular routing
 var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) =>
 {
     var agents = new AIAgent[]
     {
         sp.GetRequiredKeyedService<AIAgent>("story-writer"),
-        sp.GetRequiredKeyedService<AIAgent>("pig-latin-agent")
+        sp.GetRequiredKeyedService<AIAgent>("pig-latin-proxy")
     };
 
     return AgentWorkflowBuilder.BuildSequential(
