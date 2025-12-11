@@ -56,9 +56,12 @@ export function EventFeedWidget({
       <div className="widget-header">
         <div className="header-title-row">
           <h2>Events</h2>
-          <span className="event-count-badge">
-            {events.length}
-          </span>
+          <div className="header-stats">
+            <span className="stat" title="Total events">
+              <span className="stat-value">{events.length}</span>
+              <span className="stat-label">total</span>
+            </span>
+          </div>
         </div>
         <div className="header-controls">
           <div className="filter-buttons">

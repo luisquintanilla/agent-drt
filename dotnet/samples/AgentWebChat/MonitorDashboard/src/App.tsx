@@ -187,36 +187,41 @@ export default function App() {
       <header className="app-header">
         <div className="header-left">
           <h1>Workflow Monitor</h1>
-          {uptime && (
-            <span className="uptime-badge" title="System uptime">
-              <span className="uptime-icon">^</span>
-              {uptime}
-            </span>
-          )}
         </div>
         <div className="header-right">
-          <button onClick={toggleTheme} className="theme-toggle" title="Toggle theme (T)">
+          <button onClick={toggleTheme} className="header-badge theme-toggle" title="Toggle theme (T)">
             {isLightTheme ? (
-              <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
+              <>
+                <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+                <span>Dark</span>
+              </>
             ) : (
-              <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
+              <>
+                <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+                <span>Light</span>
+              </>
             )}
           </button>
-          <div className="connection-status">
+          {uptime && (
+            <span className="header-badge" title="System uptime">
+              up {uptime}
+            </span>
+          )}
+          <div className="header-badge">
             <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
-            <span className="status-text">{isConnected ? 'Live' : 'Disconnected'}</span>
+            <span>{isConnected ? 'Live' : 'Disconnected'}</span>
             {!isConnected && (
               <button onClick={reconnect} className="reconnect-btn">Retry</button>
             )}

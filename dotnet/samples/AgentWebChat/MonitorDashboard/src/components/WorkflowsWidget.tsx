@@ -3,8 +3,6 @@ import type { WorkflowMonitoringSummary } from '../types';
 import { Skeleton } from './Skeleton';
 import './WorkflowsWidget.css';
 
-type TabType = 'active' | 'recent';
-
 interface WorkflowStats {
   active: number;
   queued: number;
@@ -23,6 +21,18 @@ interface WorkflowsWidgetProps {
   onSelectWorkflow: (runId: string) => void;
 }
 
+// Check if a workflow is considered "active" based on its status
+function isActiveWorkflow(wf: WorkflowMonitoringSummary): boolean {
+  const lower = wf.status.toLowerCase();
+  return (
+    lower.includes('running') ||
+    lower.includes('executing') ||
+    lower.includes('pending') ||
+    lower.includes('queued') ||
+    lower.includes('waiting')
+  );
+}
+
 export function WorkflowsWidget({
   activeWorkflows,
   recentWorkflows,
@@ -32,40 +42,62 @@ export function WorkflowsWidget({
   onRefresh,
   onSelectWorkflow,
 }: WorkflowsWidgetProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('active');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const allWorkflows = activeTab === 'active' ? activeWorkflows : recentWorkflows;
+  // Merge and sort workflows: active first (sorted by createdAt desc), then recent (sorted by completedAt desc)
+  const mergedWorkflows = useMemo(() => {
+    // Create a map to deduplicate by runId (prefer active version if exists in both)
+    const workflowMap = new Map<string, WorkflowMonitoringSummary>();
+    
+    // Add recent first so active can override
+    recentWorkflows.forEach(wf => workflowMap.set(wf.runId, wf));
+    activeWorkflows.forEach(wf => workflowMap.set(wf.runId, wf));
+    
+    const all = Array.from(workflowMap.values());
+    
+    // Separate active and recent
+    const active = all.filter(isActiveWorkflow).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const recent = all.filter(wf => !isActiveWorkflow(wf)).sort((a, b) => {
+      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : new Date(a.createdAt).getTime();
+      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : new Date(b.createdAt).getTime();
+      return bTime - aTime;
+    });
+    
+    return [...active, ...recent];
+  }, [activeWorkflows, recentWorkflows]);
 
   // Filter workflows based on search query
   const workflows = useMemo(() => {
     if (!searchQuery.trim()) {
-      return allWorkflows;
+      return mergedWorkflows;
     }
     const query = searchQuery.toLowerCase();
-    return allWorkflows.filter(
+    return mergedWorkflows.filter(
       (wf) =>
         wf.runId.toLowerCase().includes(query) ||
         wf.workflowName.toLowerCase().includes(query) ||
         wf.status.toLowerCase().includes(query)
     );
-  }, [allWorkflows, searchQuery]);
+  }, [mergedWorkflows, searchQuery]);
 
   if (isLoading && activeWorkflows.length === 0 && recentWorkflows.length === 0) {
     return (
       <div className="workflows-widget">
         <div className="widget-header">
-          <div className="header-title-row">
-            <h2>Workflows</h2>
-            <div className="header-stats">
-              <Skeleton variant="text" width={150} height={16} />
-            </div>
+          <h2>Workflows</h2>
+          <div className="header-center">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search..."
+              disabled
+            />
           </div>
-          <button className="refresh-button" disabled>Refresh</button>
-        </div>
-        <div className="tabs">
-          <button className="tab active">Active</button>
-          <button className="tab">Recent</button>
+          <div className="header-stats">
+            <Skeleton variant="text" width={150} height={16} />
+          </div>
         </div>
         <div className="workflow-list">
           <table className="workflow-table">
@@ -75,6 +107,7 @@ export function WorkflowsWidget({
                 <th>Workflow</th>
                 <th>Status</th>
                 <th>Started</th>
+                <th>Completed</th>
                 <th>Signal</th>
                 <th></th>
               </tr>
@@ -85,6 +118,7 @@ export function WorkflowsWidget({
                   <td><Skeleton variant="text" width={80} height={14} /></td>
                   <td><Skeleton variant="text" width={120} height={14} /></td>
                   <td><Skeleton variant="badge" /></td>
+                  <td><Skeleton variant="text" width={60} height={14} /></td>
                   <td><Skeleton variant="text" width={60} height={14} /></td>
                   <td></td>
                   <td><Skeleton variant="rect" width={50} height={24} /></td>
@@ -110,35 +144,8 @@ export function WorkflowsWidget({
   return (
     <div className="workflows-widget">
       <div className="widget-header">
-        <div className="header-title-row">
-          <h2>Workflows</h2>
-          {stats && (
-            <div className="header-stats">
-              <span className="stat running" title="Active workflows">
-                <span className="stat-value">{stats.active}</span>
-                <span className="stat-label">active</span>
-              </span>
-              <span className="stat queued" title="Queued workflows">
-                <span className="stat-value">{stats.queued}</span>
-                <span className="stat-label">queued</span>
-              </span>
-              <span className="stat waiting" title="Waiting for signal">
-                <span className="stat-value">{stats.waiting}</span>
-                <span className="stat-label">waiting</span>
-              </span>
-              <span className="stat-divider">|</span>
-              <span className="stat completed" title="Completed in last 24h">
-                <span className="stat-value">{stats.completed24h}</span>
-                <span className="stat-label">done</span>
-              </span>
-              <span className="stat failed" title="Failed in last 24h">
-                <span className="stat-value">{stats.failed24h}</span>
-                <span className="stat-label">failed</span>
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="header-controls">
+        <h2>Workflows</h2>
+        <div className="header-center">
           <input
             type="text"
             className="search-input"
@@ -146,34 +153,39 @@ export function WorkflowsWidget({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button onClick={onRefresh} className="refresh-button" title="Refresh">
-            Refresh
-          </button>
         </div>
-      </div>
-
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === 'active' ? 'active' : ''}`}
-          onClick={() => setActiveTab('active')}
-        >
-          Active ({activeWorkflows.length})
-        </button>
-        <button
-          className={`tab ${activeTab === 'recent' ? 'active' : ''}`}
-          onClick={() => setActiveTab('recent')}
-        >
-          Recent ({recentWorkflows.length})
-        </button>
+        {stats && (
+          <div className="header-stats">
+            <span className="stat running" title="Active workflows">
+              <span className="stat-value">{stats.active}</span>
+              <span className="stat-label">active</span>
+            </span>
+            <span className="stat queued" title="Queued workflows">
+              <span className="stat-value">{stats.queued}</span>
+              <span className="stat-label">queued</span>
+            </span>
+            <span className="stat waiting" title="Waiting for signal">
+              <span className="stat-value">{stats.waiting}</span>
+              <span className="stat-label">waiting</span>
+            </span>
+            <span className="stat-divider">|</span>
+            <span className="stat completed" title="Completed in last 24h">
+              <span className="stat-value">{stats.completed24h}</span>
+              <span className="stat-label">done</span>
+            </span>
+            <span className="stat failed" title="Failed in last 24h">
+              <span className="stat-value">{stats.failed24h}</span>
+              <span className="stat-label">failed</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {workflows.length === 0 ? (
         <p className="no-data">
           {searchQuery
             ? 'No workflows match your search'
-            : activeTab === 'active'
-            ? 'No active workflows'
-            : 'No recent workflows'}
+            : 'No workflows'}
         </p>
       ) : (
         <div className="workflow-list">
@@ -184,7 +196,7 @@ export function WorkflowsWidget({
                 <th>Workflow</th>
                 <th>Status</th>
                 <th>Started</th>
-                {activeTab === 'recent' && <th>Completed</th>}
+                <th>Completed</th>
                 <th>Signal</th>
                 <th></th>
               </tr>
@@ -197,7 +209,7 @@ export function WorkflowsWidget({
                   onClick={() => onSelectWorkflow(wf.runId)}
                 >
                   <td className="run-id" title={wf.runId}>
-                    {truncateId(wf.runId)}
+                    {wf.runId}
                   </td>
                   <td className="workflow-name">{wf.workflowName}</td>
                   <td>
@@ -206,11 +218,9 @@ export function WorkflowsWidget({
                     </span>
                   </td>
                   <td className="time">{formatTime(wf.createdAt)}</td>
-                  {activeTab === 'recent' && (
-                    <td className="time">
-                      {wf.completedAt ? formatTime(wf.completedAt) : '-'}
-                    </td>
-                  )}
+                  <td className="time">
+                    {wf.completedAt ? formatTime(wf.completedAt) : '-'}
+                  </td>
                   <td className="signal">
                     {wf.hasPendingSignal && (
                       <span className="pending-signal" title="Waiting for signal">
@@ -248,11 +258,6 @@ function getStatusClass(status: string): string {
   if (lower.includes('waiting') || lower.includes('pending') || lower.includes('queued')) return 'waiting';
   if (lower.includes('cancelled') || lower.includes('canceled') || lower.includes('aborted')) return 'cancelled';
   return 'unknown';
-}
-
-function truncateId(id: string, maxLength = 12): string {
-  if (id.length <= maxLength) return id;
-  return `${id.substring(0, maxLength)}...`;
 }
 
 function formatTime(isoDate: string): string {

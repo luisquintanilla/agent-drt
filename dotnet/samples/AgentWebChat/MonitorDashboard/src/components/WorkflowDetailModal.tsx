@@ -192,7 +192,7 @@ export function WorkflowDetailModal({ runId, onClose, onWorkflowUpdated }: Workf
                     className="action-button delete-workflow"
                     disabled={actionInProgress}
                   >
-                    Delete Workflow
+                    Delete Run
                   </button>
                 )}
               </div>
@@ -250,7 +250,7 @@ function ConfirmDialog({ action, workflowName, runId, isLoading, error, onConfir
   const isDelete = action === 'delete';
   
   const getTitle = () => {
-    if (isDelete) return 'Delete Workflow?';
+    if (isDelete) return 'Delete Run?';
     if (isAbort) return 'Abort Workflow?';
     return 'Cancel Workflow?';
   };
@@ -259,7 +259,7 @@ function ConfirmDialog({ action, workflowName, runId, isLoading, error, onConfir
     if (isDelete) {
       return (
         <>
-          This will <strong>permanently delete</strong> the workflow and all its associated data.
+          This will <strong>permanently delete</strong> this run and all its associated data.
           This action cannot be undone.
         </>
       );

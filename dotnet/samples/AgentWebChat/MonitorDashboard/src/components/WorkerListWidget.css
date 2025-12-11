@@ -135,7 +135,6 @@
 
 .worker-table td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--border-light, #f0f0f0);
   vertical-align: middle;
 }
 
@@ -143,6 +142,7 @@
 .worker-row {
   cursor: pointer;
   transition: background 0.15s ease;
+  border-bottom: 1px solid var(--border-light, #f0f0f0);
 }
 
 .worker-row:hover {
@@ -221,16 +221,20 @@
 .active-count {
   font-variant-numeric: tabular-nums;
   font-weight: 500;
+  width: 50px;
+  text-align: center;
 }
 
 .last-check {
   color: var(--text-secondary, #666);
   font-size: 0.8rem;
   white-space: nowrap;
+  width: 70px;
 }
 
 .actions-cell {
   text-align: right;
+  width: 60px;
 }
 
 /* Action buttons */

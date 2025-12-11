@@ -106,34 +106,29 @@ export function WorkerListWidget({ workers, stats, isLoading, error, onRefresh }
   return (
     <div className="worker-list-widget">
       <div className="widget-header">
-        <div className="header-title-row">
-          <h2>Workers</h2>
-          {stats && (
-            <div className="header-stats">
-              <span className="stat healthy" title="Healthy workers">
-                <span className="stat-value">{stats.healthy}</span>
-                <span className="stat-label">healthy</span>
-              </span>
-              <span className="stat-divider">/</span>
-              <span className="stat" title="Total registered workers">
-                <span className="stat-value">{stats.registered}</span>
-                <span className="stat-label">total</span>
-              </span>
-              {stats.drained > 0 && (
-                <>
-                  <span className="stat-divider">|</span>
-                  <span className="stat drained" title="Drained workers">
-                    <span className="stat-value">{stats.drained}</span>
-                    <span className="stat-label">drained</span>
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        <button onClick={onRefresh} className="refresh-button" title="Refresh">
-          Refresh
-        </button>
+        <h2>Workers</h2>
+        {stats && (
+          <div className="header-stats">
+            <span className="stat healthy" title="Healthy workers">
+              <span className="stat-value">{stats.healthy}</span>
+              <span className="stat-label">healthy</span>
+            </span>
+            <span className="stat-divider">/</span>
+            <span className="stat" title="Total registered workers">
+              <span className="stat-value">{stats.registered}</span>
+              <span className="stat-label">total</span>
+            </span>
+            {stats.drained > 0 && (
+              <>
+                <span className="stat-divider">|</span>
+                <span className="stat drained" title="Drained workers">
+                  <span className="stat-value">{stats.drained}</span>
+                  <span className="stat-label">drained</span>
+                </span>
+              </>
+            )}
+          </div>
+        )}
       </div>
       
       {workers.length === 0 ? (
@@ -161,7 +156,7 @@ export function WorkerListWidget({ workers, stats, isLoading, error, onRefresh }
                     <td className="worker-id-cell">
                       <span className={`health-indicator ${getHealthClass(worker.health)}`}></span>
                       <span className="worker-id" title={worker.workerId}>
-                        {truncateId(worker.workerId)}
+                        {worker.workerId}
                       </span>
                     </td>
                     <td>
@@ -244,11 +239,6 @@ function getHealthClass(health: WorkerHealthState): string {
     default:
       return 'unknown';
   }
-}
-
-function truncateId(id: string, maxLength = 12): string {
-  if (id.length <= maxLength) return id;
-  return `${id.substring(0, maxLength)}...`;
 }
 
 function formatTimeAgo(isoDate: string): string {
