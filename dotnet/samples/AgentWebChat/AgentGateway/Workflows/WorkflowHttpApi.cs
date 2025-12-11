@@ -143,6 +143,12 @@ internal static class WorkflowHttpApi
             .Produces<ETagResponse>()
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
+
+        // POST /v1/workflows/{runId}/state/output-delta - Record streaming output delta
+        stateGroup.MapPost("/output-delta", RecordOutputDeltaAsync)
+            .WithName("RecordOutputDelta")
+            .Produces(StatusCodes.Status202Accepted)
+            .ProducesProblem(StatusCodes.Status404NotFound);
     }
 
     // ============ Frontend API Handlers ============
@@ -813,6 +819,29 @@ internal static class WorkflowHttpApi
                 title: "Concurrency conflict",
                 detail: ex.Message,
                 statusCode: StatusCodes.Status409Conflict);
+        }
+    }
+
+    private static async Task<IResult> RecordOutputDeltaAsync(
+        string runId,
+        WorkflowOutputDelta delta,
+        IGrainFactory grainFactory,
+        CancellationToken ct)
+    {
+        var grain = grainFactory.GetGrain<IWorkflowGrain>(runId);
+
+        try
+        {
+            // Record the delta - we don't use ETags for streaming deltas (performance)
+            await grain.RecordOutputDeltaAsync(delta, null, ct);
+            return Results.Accepted();
+        }
+        catch (WorkflowNotFoundException)
+        {
+            return Results.Problem(
+                title: "Workflow not found",
+                detail: $"Workflow '{runId}' not found.",
+                statusCode: StatusCodes.Status404NotFound);
         }
     }
 }

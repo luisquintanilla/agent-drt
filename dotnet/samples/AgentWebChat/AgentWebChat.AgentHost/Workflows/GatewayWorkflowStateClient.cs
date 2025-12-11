@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
@@ -217,6 +217,42 @@ internal sealed class GatewayWorkflowStateClient : IWorkflowStateService
         AddETagHeader(request, etag);
 
         return await this.SendStateRequestAsync(runId, request, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task RecordOutputDeltaAsync(
+        string runId,
+        WorkflowOutputDelta delta,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(runId);
+        ArgumentNullException.ThrowIfNull(delta);
+
+        var uri = new Uri($"/v1/workflows/{Uri.EscapeDataString(runId)}/state/output-delta", UriKind.Relative);
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri)
+        {
+            Content = JsonContent.Create(delta, mediaType: null, this._jsonOptions)
+        };
+
+        try
+        {
+            var response = await this._httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw WorkflowNotFoundException.ForRunId(runId);
+            }
+
+            // Accept 202 Accepted as success for streaming deltas
+            if (response.StatusCode != HttpStatusCode.Accepted)
+            {
+                response.EnsureSuccessStatusCode();
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new InvalidOperationException($"Failed to record output delta for workflow '{runId}'.", ex);
+        }
     }
 
     /// <inheritdoc/>

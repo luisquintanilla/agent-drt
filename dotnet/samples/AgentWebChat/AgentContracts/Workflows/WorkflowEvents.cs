@@ -1,6 +1,7 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace AgentContracts.Workflows;
@@ -15,6 +16,7 @@ namespace AgentContracts.Workflows;
 [JsonDerivedType(typeof(WorkflowSignalRequestedEvent), "signal.requested")]
 [JsonDerivedType(typeof(WorkflowSignalReceivedEvent), "signal.received")]
 [JsonDerivedType(typeof(WorkflowArtifactCreatedEvent), "artifact.created")]
+[JsonDerivedType(typeof(WorkflowOutputDeltaEvent), "output.delta")]
 [JsonDerivedType(typeof(WorkflowCompletedEvent), "workflow.completed")]
 [JsonDerivedType(typeof(WorkflowCompletedSignalEvent), "workflow.completed.signal")]
 [JsonDerivedType(typeof(WorkflowFailedEvent), "workflow.failed")]
@@ -138,4 +140,59 @@ public sealed class WorkflowAbortedEvent : WorkflowStatusEvent
 
     [JsonPropertyName("abortedBy")]
     public string? AbortedBy { get; init; }
+}
+
+/// <summary>
+/// Event emitted when a workflow produces a streaming output delta (token-by-token content).
+/// This enables real-time token streaming from AI models through the workflow system.
+/// </summary>
+public sealed class WorkflowOutputDeltaEvent : WorkflowStatusEvent
+{
+    /// <summary>
+    /// The delta content (typically a token or small chunk of text).
+    /// </summary>
+    [JsonPropertyName("delta")]
+    public required WorkflowOutputDelta Delta { get; init; }
+}
+
+/// <summary>
+/// Represents a streaming output delta from a workflow step.
+/// </summary>
+public sealed class WorkflowOutputDelta
+{
+    /// <summary>
+    /// The step ID that produced this delta.
+    /// </summary>
+    [JsonPropertyName("stepId")]
+    public required string StepId { get; init; }
+
+    /// <summary>
+    /// The content delta (typically a token or small chunk of text).
+    /// </summary>
+    [JsonPropertyName("content")]
+    public required string Content { get; init; }
+
+    /// <summary>
+    /// The content type of the delta (e.g., "text/plain", "text/markdown").
+    /// </summary>
+    [JsonPropertyName("contentType")]
+    public string ContentType { get; init; } = "text/plain";
+
+    /// <summary>
+    /// The index within the step's output (for ordering/reassembly).
+    /// </summary>
+    [JsonPropertyName("index")]
+    public int Index { get; init; }
+
+    /// <summary>
+    /// Whether this is the final delta for this step.
+    /// </summary>
+    [JsonPropertyName("isComplete")]
+    public bool IsComplete { get; init; }
+
+    /// <summary>
+    /// Optional metadata about the delta (e.g., token probabilities, model info).
+    /// </summary>
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, string>? Metadata { get; init; }
 }

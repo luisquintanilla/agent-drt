@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -105,4 +105,35 @@ internal interface IWorkflowGrain : IGrainWithStringKey
     /// Only allowed for workflows in terminal status (Completed, Cancelled, Aborted, Failed).
     /// </summary>
     Task DeleteAsync(CancellationToken cancellationToken);
+
+    // ============ Execution State Methods (for retry/recovery support) ============
+
+    /// <summary>
+    /// Updates the execution state for tracking dispatch/execution progress.
+    /// Called by the HTTP API after dispatching to a worker.
+    /// </summary>
+    Task SetExecutionStateAsync(WorkflowExecutionState state, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets the current execution state.
+    /// </summary>
+    Task<WorkflowExecutionState> GetExecutionStateAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Stores a pending signal that needs to be processed.
+    /// Used when a signal is received but the resume hasn't been dispatched yet.
+    /// </summary>
+    Task SetPendingSignalAsync(WorkflowSignal? signal, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets any pending signal that needs to be processed.
+    /// </summary>
+    Task<WorkflowSignal?> GetPendingSignalAsync(CancellationToken cancellationToken);
+
+    // ============ Streaming Output Methods (for token-by-token streaming) ============
+
+    /// <summary>
+    /// Records a streaming output delta (token-by-token content).
+    /// </summary>
+    Task<string> RecordOutputDeltaAsync(WorkflowOutputDelta delta, string? etag, CancellationToken cancellationToken);
 }

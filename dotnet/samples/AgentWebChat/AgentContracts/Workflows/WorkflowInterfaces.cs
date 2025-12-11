@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -175,6 +175,18 @@ public interface IWorkflowStateService
         string runId,
         WorkflowArtifactRecord artifact,
         string? etag = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Records a streaming output delta from a workflow step.
+    /// This method is optimized for high-frequency token streaming and does not use ETags.
+    /// </summary>
+    /// <param name="runId">The workflow run ID.</param>
+    /// <param name="delta">The output delta to record.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task RecordOutputDeltaAsync(
+        string runId,
+        WorkflowOutputDelta delta,
         CancellationToken cancellationToken = default);
 
     /// <summary>
