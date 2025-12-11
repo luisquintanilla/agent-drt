@@ -5,9 +5,18 @@ import './WorkflowsWidget.css';
 
 type TabType = 'active' | 'recent';
 
+interface WorkflowStats {
+  active: number;
+  queued: number;
+  waiting: number;
+  completed24h: number;
+  failed24h: number;
+}
+
 interface WorkflowsWidgetProps {
   activeWorkflows: WorkflowMonitoringSummary[];
   recentWorkflows: WorkflowMonitoringSummary[];
+  stats: WorkflowStats | null;
   isLoading: boolean;
   error: Error | null;
   onRefresh: () => void;
@@ -17,6 +26,7 @@ interface WorkflowsWidgetProps {
 export function WorkflowsWidget({
   activeWorkflows,
   recentWorkflows,
+  stats,
   isLoading,
   error,
   onRefresh,
@@ -45,7 +55,12 @@ export function WorkflowsWidget({
     return (
       <div className="workflows-widget">
         <div className="widget-header">
-          <h2>Workflows</h2>
+          <div className="header-title-row">
+            <h2>Workflows</h2>
+            <div className="header-stats">
+              <Skeleton variant="text" width={150} height={16} />
+            </div>
+          </div>
           <button className="refresh-button" disabled>Refresh</button>
         </div>
         <div className="tabs">
@@ -95,12 +110,39 @@ export function WorkflowsWidget({
   return (
     <div className="workflows-widget">
       <div className="widget-header">
-        <h2>Workflows</h2>
+        <div className="header-title-row">
+          <h2>Workflows</h2>
+          {stats && (
+            <div className="header-stats">
+              <span className="stat running" title="Active workflows">
+                <span className="stat-value">{stats.active}</span>
+                <span className="stat-label">active</span>
+              </span>
+              <span className="stat queued" title="Queued workflows">
+                <span className="stat-value">{stats.queued}</span>
+                <span className="stat-label">queued</span>
+              </span>
+              <span className="stat waiting" title="Waiting for signal">
+                <span className="stat-value">{stats.waiting}</span>
+                <span className="stat-label">waiting</span>
+              </span>
+              <span className="stat-divider">|</span>
+              <span className="stat completed" title="Completed in last 24h">
+                <span className="stat-value">{stats.completed24h}</span>
+                <span className="stat-label">done</span>
+              </span>
+              <span className="stat failed" title="Failed in last 24h">
+                <span className="stat-value">{stats.failed24h}</span>
+                <span className="stat-label">failed</span>
+              </span>
+            </div>
+          )}
+        </div>
         <div className="header-controls">
           <input
             type="text"
             className="search-input"
-            placeholder="Search workflows..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

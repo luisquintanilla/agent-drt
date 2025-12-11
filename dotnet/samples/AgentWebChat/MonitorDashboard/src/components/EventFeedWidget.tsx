@@ -54,8 +54,13 @@ export function EventFeedWidget({
   return (
     <div className="event-feed-widget">
       <div className="widget-header">
-        <h2>Event Feed</h2>
-        <div className="feed-controls">
+        <div className="header-title-row">
+          <h2>Events</h2>
+          <span className="event-count-badge">
+            {events.length}
+          </span>
+        </div>
+        <div className="header-controls">
           <div className="filter-buttons">
             <button
               className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
@@ -76,17 +81,11 @@ export function EventFeedWidget({
               Workflows
             </button>
           </div>
-          <div className="connection-status">
-            <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
-            <span className="status-text">
-              {isConnected ? 'Live' : 'Disconnected'}
-            </span>
-            {!isConnected && (
-              <button onClick={onReconnect} className="reconnect-button">
-                Reconnect
-              </button>
-            )}
-          </div>
+          {!isConnected && (
+            <button onClick={onReconnect} className="reconnect-button">
+              Reconnect
+            </button>
+          )}
         </div>
       </div>
 
@@ -110,13 +109,8 @@ export function EventFeedWidget({
         )}
       </div>
 
-      <div className="event-footer">
-        <span className="event-count">
-          {filteredEvents.length === events.length
-            ? `${events.length} event${events.length !== 1 ? 's' : ''}`
-            : `${filteredEvents.length} of ${events.length} events`}
-        </span>
-        {!autoScroll && (
+      {!autoScroll && (
+        <div className="scroll-indicator">
           <button
             className="scroll-to-bottom"
             onClick={() => {
@@ -128,8 +122,8 @@ export function EventFeedWidget({
           >
             Scroll to latest
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

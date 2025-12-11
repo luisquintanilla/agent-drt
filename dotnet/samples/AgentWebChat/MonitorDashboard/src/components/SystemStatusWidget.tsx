@@ -1,5 +1,5 @@
 import type { SystemStatus } from '../types';
-import { SkeletonMetricRow } from './Skeleton';
+import { Skeleton } from './Skeleton';
 import './SystemStatusWidget.css';
 
 interface SystemStatusWidgetProps {
@@ -11,38 +11,24 @@ interface SystemStatusWidgetProps {
 export function SystemStatusWidget({ status, isLoading, error }: SystemStatusWidgetProps) {
   if (isLoading) {
     return (
-      <div className="system-status-widget">
-        <h2>System Status</h2>
-        <div className="status-grid">
-          <div className="status-section">
-            <h3>Workflows</h3>
-            <SkeletonMetricRow label="Active" />
-            <SkeletonMetricRow label="Queued" />
-            <SkeletonMetricRow label="Waiting for Signal" />
-            <SkeletonMetricRow label="Completed (24h)" />
-            <SkeletonMetricRow label="Failed (24h)" />
+      <div className="kpi-cards">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="kpi-card">
+            <Skeleton variant="text" width={40} height={28} />
+            <Skeleton variant="text" width={70} height={12} />
           </div>
-          <div className="status-section">
-            <h3>Workers</h3>
-            <SkeletonMetricRow label="Registered" />
-            <SkeletonMetricRow label="Healthy" />
-            <SkeletonMetricRow label="Drained" />
-          </div>
-          <div className="status-section">
-            <h3>System</h3>
-            <SkeletonMetricRow label="Uptime" />
-            <SkeletonMetricRow label="Version" />
-          </div>
-        </div>
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="system-status-widget error">
-        <h2>System Status</h2>
-        <p className="error-message">Failed to load: {error.message}</p>
+      <div className="kpi-cards">
+        <div className="kpi-card error">
+          <span className="kpi-value">!</span>
+          <span className="kpi-label">Error loading status</span>
+        </div>
       </div>
     );
   }
@@ -52,63 +38,41 @@ export function SystemStatusWidget({ status, isLoading, error }: SystemStatusWid
   }
 
   return (
-    <div className="system-status-widget">
-      <h2>System Status</h2>
-      <div className="status-grid">
-        <div className="status-section workflows">
-          <h3>Workflows</h3>
-          <div className="metric">
-            <span className="label">Active</span>
-            <span className="value running">{status.activeWorkflows}</span>
-          </div>
-          <div className="metric">
-            <span className="label">Queued</span>
-            <span className="value queued">{status.queuedWorkflows}</span>
-          </div>
-          <div className="metric">
-            <span className="label">Waiting for Signal</span>
-            <span className="value waiting">{status.waitingForSignalWorkflows}</span>
-          </div>
-          <div className="metric">
-            <span className="label">Completed (24h)</span>
-            <span className="value completed">{status.completedWorkflows24h}</span>
-          </div>
-          <div className="metric">
-            <span className="label">Failed (24h)</span>
-            <span className="value failed">{status.failedWorkflows24h}</span>
-          </div>
-        </div>
-        
-        <div className="status-section workers">
-          <h3>Workers</h3>
-          <div className="metric">
-            <span className="label">Registered</span>
-            <span className="value">{status.registeredWorkers}</span>
-          </div>
-          <div className="metric">
-            <span className="label">Healthy</span>
-            <span className="value healthy">{status.healthyWorkers}</span>
-          </div>
-          <div className="metric">
-            <span className="label">Drained</span>
-            <span className="value drained">{status.drainedWorkers}</span>
-          </div>
-        </div>
-
-        <div className="status-section system">
-          <h3>System</h3>
-          <div className="metric">
-            <span className="label">Uptime</span>
-            <span className="value">{formatUptime(status.uptime)}</span>
-          </div>
-          {status.version && (
-            <div className="metric">
-              <span className="label">Version</span>
-              <span className="value">{status.version}</span>
-            </div>
-          )}
-        </div>
+    <div className="kpi-cards">
+      <div className="kpi-card">
+        <span className="kpi-value running">{status.activeWorkflows}</span>
+        <span className="kpi-label">Active</span>
       </div>
+      <div className="kpi-card">
+        <span className="kpi-value queued">{status.queuedWorkflows}</span>
+        <span className="kpi-label">Queued</span>
+      </div>
+      <div className="kpi-card">
+        <span className="kpi-value waiting">{status.waitingForSignalWorkflows}</span>
+        <span className="kpi-label">Waiting</span>
+      </div>
+      <div className="kpi-card">
+        <span className="kpi-value completed">{status.completedWorkflows24h}</span>
+        <span className="kpi-label">Completed 24h</span>
+      </div>
+      <div className="kpi-card">
+        <span className="kpi-value failed">{status.failedWorkflows24h}</span>
+        <span className="kpi-label">Failed 24h</span>
+      </div>
+      <div className="kpi-card workers-kpi">
+        <span className="kpi-value">
+          <span className="healthy">{status.healthyWorkers}</span>
+          <span className="separator">/</span>
+          <span>{status.registeredWorkers}</span>
+        </span>
+        <span className="kpi-label">Workers Healthy</span>
+      </div>
+      {status.uptime && (
+        <div className="kpi-card">
+          <span className="kpi-value">{formatUptime(status.uptime)}</span>
+          <span className="kpi-label">Uptime</span>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-export { SystemStatusWidget } from './SystemStatusWidget';
 export { WorkerListWidget } from './WorkerListWidget';
 export { ActiveWorkflowsWidget } from './ActiveWorkflowsWidget';
 export { WorkflowsWidget } from './WorkflowsWidget';
