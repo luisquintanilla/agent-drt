@@ -144,7 +144,7 @@ builder.Services.AddHttpClient("GatewayClient", (sp, client) =>
 // Register proxy agent that calls Python agent through Gateway
 // NOTE: Using AddKeyedSingleton instead of AddAIAgent to prevent circular discovery!
 // The Gateway should discover pig-latin-agent from PythonAgent, not from AgentHost
-builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-proxy", (sp, key) =>
+builder.Services.AddKeyedSingleton("pig-latin-proxy", (sp, key) =>
 {
     var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
     var httpClient = httpClientFactory.CreateClient("GatewayClient");
@@ -162,7 +162,7 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
     var agents = new AIAgent[]
     {
         sp.GetRequiredKeyedService<AIAgent>("story-writer"),
-        sp.GetRequiredKeyedService<AIAgent>("pig-latin-proxy") // Use proxy instead of direct pig-latin-agent
+        sp.GetRequiredKeyedService<HttpResponseProxyAgent>("pig-latin-proxy") // Use proxy instead of direct pig-latin-agent
     };
 
     return AgentWorkflowBuilder.BuildSequential(
