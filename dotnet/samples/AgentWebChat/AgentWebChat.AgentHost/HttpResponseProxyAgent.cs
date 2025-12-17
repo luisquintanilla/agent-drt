@@ -200,21 +200,9 @@ public sealed class HttpResponseProxyAgent : AIAgent
                 break;
 
             case "response.output_text.done":
-                if (root.TryGetProperty("text", out var textElement))
-                {
-                    var text = textElement.GetString();
-                    if (!string.IsNullOrEmpty(text))
-                    {
-                        return new AgentRunResponseUpdate
-                        {
-                            Role = ChatRole.Assistant,
-                            Contents = [new TextContent(text)],
-                            AuthorName = this._agentName
-                        };
-                    }
-                }
-
-                break;
+                // Skip this event - content already streamed via delta events
+                // Including it would duplicate all the pig-latin text
+                return null;
 
             case "response.completed":
                 // Final event - no content to yield
