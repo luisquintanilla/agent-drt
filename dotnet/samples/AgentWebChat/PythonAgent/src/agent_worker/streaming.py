@@ -9,13 +9,10 @@ async def stream_events(
     events: AsyncIterator[StreamingResponseEvent],
 ) -> AsyncIterator[str]:
     """
-    Convert Pydantic event objects to SSE format expected by gateway.
+    Convert Pydantic event objects to JSON strings for EventSourceResponse.
     
-    Format: "data: {json}\\n\\n"
+    EventSourceResponse automatically adds "data: " prefix and "\n\n" delimiter.
     """
     async for event in events:
-        # Serialize event to JSON
-        event_json = event.model_dump_json(exclude_none=True)
-        
-        # Format as SSE
-        yield f"data: {event_json}\n\n"
+        # Serialize event to JSON (EventSourceResponse handles SSE formatting)
+        yield event.model_dump_json(exclude_none=True)

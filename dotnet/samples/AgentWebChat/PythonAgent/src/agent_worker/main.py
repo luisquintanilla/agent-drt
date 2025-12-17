@@ -36,20 +36,24 @@ async def health_check():
 
 
 @app.get("/v1/entities")
-async def list_agents() -> list[AgentCard]:
+async def list_agents():
     """
     Agent discovery endpoint.
     
     Gateway's WorkerDiscoveryCache queries this to find
     which agents this worker supports.
+    
+    Returns DiscoveryResponse format: {"entities": [...]}
     """
-    return [
-        AgentCard(
-            name=agent["name"],
-            description=agent["description"],
-        )
-        for agent in AGENTS.values()
-    ]
+    return {
+        "entities": [
+            {
+                "name": agent["name"],
+                "description": agent["description"],
+            }
+            for agent in AGENTS.values()
+        ]
+    }
 
 
 @app.post("/v1/responses")

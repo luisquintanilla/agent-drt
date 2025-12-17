@@ -103,10 +103,22 @@ internal sealed class WorkerResponseExecutor : IResponseExecutor
         string? line;
         while ((line = await reader.ReadLineAsync(cancellationToken)) is not null)
         {
+            // Skip empty lines (SSE format uses blank lines as delimiters)
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
             // SSE format: "data: {json}\n\n"
             if (line.StartsWith("data: ", StringComparison.Ordinal))
             {
                 var data = line.Substring(6); // Skip "data: "
+
+                // Skip empty data lines
+                if (string.IsNullOrWhiteSpace(data))
+                {
+                    continue;
+                }
 
                 // Deserialize the streaming event
                 StreamingResponseEvent? streamingEvent;
@@ -116,7 +128,7 @@ internal sealed class WorkerResponseExecutor : IResponseExecutor
                 }
                 catch (Exception ex)
                 {
-                    this._logger.LogWarning(ex, "Failed to deserialize streaming event from worker: {Data}", data);
+                    this._logger.LogWarning(ex, "Failed to deserialize streaming event from worker: {Data}", line);
                     continue;
                 }
 

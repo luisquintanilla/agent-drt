@@ -89,6 +89,9 @@ async def execute_pig_latin_agent(
     
     Yields streaming events as the translation is performed.
     """
+    from ..models import ResponseStatus, ItemResource, ItemContent
+    import time
+    
     sequence = 0
     
     # Extract input text
@@ -118,20 +121,35 @@ async def execute_pig_latin_agent(
         input_text = ""
     
     # Emit response.created
+    created_at = int(time.time())
     yield ResponseCreatedEvent(
-        response_id=response_id,
+        response=ResponseStatus(
+            id=response_id,
+            status="in_progress",
+            created_at=created_at,
+        ),
         sequence_number=sequence,
     )
     sequence += 1
     
     # Emit response.in_progress
-    yield ResponseInProgressEvent(sequence_number=sequence)
+    yield ResponseInProgressEvent(
+        response=ResponseStatus(
+            id=response_id,
+            status="in_progress",
+        ),
+        sequence_number=sequence,
+    )
     sequence += 1
     
     # Emit output_item.added
     item_id = f"{response_id}_item_0"
     yield OutputItemAddedEvent(
-        item_id=item_id,
+        item=ItemResource(
+            id=item_id,
+            type="message",
+            content=[],
+        ),
         output_index=0,
         sequence_number=sequence,
     )
@@ -157,19 +175,29 @@ async def execute_pig_latin_agent(
         
         # Emit delta
         yield OutputTextDeltaEvent(
+            item_id=item_id,
             delta=chunk_text,
             output_index=0,
+            content_index=0,
             sequence_number=sequence,
         )
         sequence += 1
     
     # Emit output_text.done
     yield OutputTextDoneEvent(
+        item_id=item_id,
         text="".join(full_text),
         output_index=0,
+        content_index=0,
         sequence_number=sequence,
     )
     sequence += 1
     
     # Emit response.completed
-    yield ResponseCompletedEvent(sequence_number=sequence)
+    yield ResponseCompletedEvent(
+        response=ResponseStatus(
+            id=response_id,
+            status="completed",
+        ),
+        sequence_number=sequence,
+    )

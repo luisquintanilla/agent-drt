@@ -1,7 +1,5 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 
-using System.ClientModel;
-using System.ClientModel.Primitives;
 using AgentContracts;
 using AgentWebChat.AgentHost;
 using AgentWebChat.AgentHost.Custom;
@@ -15,8 +13,6 @@ using Microsoft.Agents.AI.Hosting;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
-using OpenAI;
-using OpenAI.Responses;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -135,43 +131,38 @@ var storyWriterAgent = builder.AddAIAgent(
     description: "An agent that writes creative short stories.",
     chatClientServiceKey: "chat-model");
 
-builder.AddAIAgent("pig-latin-proxy", (sp, key) =>
+// Register HttpClient for Gateway communication
+builder.Services.AddHttpClient("GatewayClient", (sp, client) =>
 {
     var gatewayUrl = builder.Configuration["Worker:GatewayBaseAddress"];
-    if (string.IsNullOrEmpty(gatewayUrl))
+    if (!string.IsNullOrEmpty(gatewayUrl))
     {
-        throw new InvalidOperationException("Worker:GatewayBaseAddress configuration is required for Python agent integration");
+        client.BaseAddress = new Uri(gatewayUrl);
     }
+});
 
-    var httpClient = new HttpClient { BaseAddress = new Uri(gatewayUrl) };
+// Register proxy agent that calls Python agent through Gateway
+// NOTE: Using AddKeyedSingleton instead of AddAIAgent to prevent circular discovery!
+// The Gateway should discover pig-latin-agent from PythonAgent, not from AgentHost
+builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-proxy", (sp, key) =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("GatewayClient");
 
-    var options = new OpenAIClientOptions
-    {
-        Endpoint = new Uri(httpClient.BaseAddress!, "/v1/"),
-        Transport = new HttpClientPipelineTransport(httpClient)
-    };
-
-    var responseClient = new OpenAIResponseClient(
-        model: "pig-latin-agent",
-        credential: new ApiKeyCredential("dummy-key"),
-        options: options
-    );
-
-    return new OpenAIResponseClientAgent(
-        responseClient,
-        name: "pig-latin-agent",
-        description: "Translates English text to Pig Latin"
+    return new HttpResponseProxyAgent(
+        httpClient: httpClient,
+        agentName: "pig-latin-agent", // Routes to Python agent via Gateway
+        description: "Proxy to Python pig-latin-agent"
     );
 });
 
 // Polyglot workflow: .NET writes story, Python translates to Pig Latin
-// Note: The pig-latin-agent is registered below but NOT advertised via DevUI to avoid circular routing
 var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) =>
 {
     var agents = new AIAgent[]
     {
         sp.GetRequiredKeyedService<AIAgent>("story-writer"),
-        sp.GetRequiredKeyedService<AIAgent>("pig-latin-proxy")
+        sp.GetRequiredKeyedService<AIAgent>("pig-latin-proxy") // Use proxy instead of direct pig-latin-agent
     };
 
     return AgentWorkflowBuilder.BuildSequential(

@@ -46,17 +46,17 @@ builder.AddProject<Projects.AgentWebChat_Web>("webfrontend")
     .WaitFor(gateway);
 
 // MarketR React frontend for workflow management
-builder.AddNpmApp("marketr", "../MarketR", "dev")
-    .WithReference(gateway)
-    .WithHttpEndpoint(port: 5173, env: "PORT")
-    .WithExternalHttpEndpoints()
-    .WaitFor(gateway);
+// builder.AddNpmApp("marketr", "../MarketR", "dev")
+//     .WithReference(gateway)
+//     .WithHttpEndpoint(port: 5173, env: "PORT")
+//     .WithExternalHttpEndpoints()
+//     .WaitFor(gateway);
 
 // MonitorDashboard React frontend for system monitoring
-builder.AddNpmApp("monitor", "../MonitorDashboard", "dev")
-    .WithReference(gateway)
-    .WithHttpEndpoint(port: 5174, env: "PORT")
-    .WithExternalHttpEndpoints()
-    .WaitFor(gateway);
+// builder.AddNpmApp("monitor", "../MonitorDashboard", "dev")
+//     .WithReference(gateway)
+//     .WithHttpEndpoint(port: 5174, env: "PORT")
+//     .WithExternalHttpEndpoints()
+//     .WaitFor(gateway);
 
 builder.Build().Run();
