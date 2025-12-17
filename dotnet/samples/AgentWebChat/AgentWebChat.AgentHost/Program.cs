@@ -169,7 +169,7 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
         workflowName: key,
         agents: agents
     );
-}).AddAsAIAgent();
+});
 
 builder.Services.AddKeyedSingleton("NonAgentAndNonmatchingDINameWorkflow", (sp, key) =>
 {
