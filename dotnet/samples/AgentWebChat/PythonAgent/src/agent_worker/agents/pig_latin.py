@@ -137,6 +137,7 @@ async def execute_pig_latin_agent(
         response=ResponseStatus(
             id=response_id,
             status="in_progress",
+            created_at=created_at,
         ),
         sequence_number=sequence,
     )
@@ -148,6 +149,7 @@ async def execute_pig_latin_agent(
         item=ItemResource(
             id=item_id,
             type="message",
+            role="assistant",
             content=[],
         ),
         output_index=0,
@@ -184,20 +186,33 @@ async def execute_pig_latin_agent(
         sequence += 1
     
     # Emit output_text.done
+    final_text = "".join(full_text)
     yield OutputTextDoneEvent(
         item_id=item_id,
-        text="".join(full_text),
+        text=final_text,
         output_index=0,
         content_index=0,
         sequence_number=sequence,
     )
     sequence += 1
     
+    # Calculate usage (simple word count)
+    input_token_count = len(input_text.split())
+    output_token_count = len(final_text.split())
+    
     # Emit response.completed
+    from ..models import ResponseUsage
     yield ResponseCompletedEvent(
         response=ResponseStatus(
             id=response_id,
             status="completed",
+            created_at=created_at,
+            usage=ResponseUsage(
+                input_tokens=input_token_count,
+                output_tokens=output_token_count,
+                total_tokens=input_token_count + output_token_count,
+            ),
+            tools=[],
         ),
         sequence_number=sequence,
     )

@@ -23,13 +23,24 @@ class CreateResponse(BaseModel):
     conversation_id: str | None = None
 
 
+class ResponseUsage(BaseModel):
+    """Usage statistics matching OpenAI Responses API."""
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    input_tokens_details: dict[str, Any] | None = None
+    output_tokens_details: dict[str, Any] | None = None
+
+
 class ResponseStatus(BaseModel):
     """Response status object matching OpenAI Responses API."""
     id: str
     status: Literal["in_progress", "completed", "failed"] = "in_progress"
     object: str = "response"
-    created_at: int | None = None
+    created_at: int
     output: list[Any] = Field(default_factory=list)
+    usage: ResponseUsage = Field(default_factory=ResponseUsage)
+    tools: list[Any] = Field(default_factory=list)
 
 
 class ItemContent(BaseModel):
@@ -43,6 +54,7 @@ class ItemResource(BaseModel):
     id: str
     type: str = "message"
     object: str = "response.item"
+    role: str = "assistant"
     content: list[ItemContent] = Field(default_factory=list)
 
 

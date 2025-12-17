@@ -122,6 +122,9 @@ internal sealed class WorkerResponseExecutor : IResponseExecutor
 
                 // Deserialize the streaming event
                 StreamingResponseEvent? streamingEvent;
+                Exception? deserializationError = null;
+                bool isCriticalCompletionEvent = false;
+
                 try
                 {
                     streamingEvent = JsonSerializer.Deserialize<StreamingResponseEvent>(data, AgentGatewayJsonUtilities.DefaultOptions);
@@ -129,7 +132,37 @@ internal sealed class WorkerResponseExecutor : IResponseExecutor
                 catch (Exception ex)
                 {
                     this._logger.LogWarning(ex, "Failed to deserialize streaming event from worker: {Data}", line);
-                    continue;
+                    deserializationError = ex;
+                    streamingEvent = null;
+
+                    // Check if this is a critical completion event
+                    isCriticalCompletionEvent = data.Contains("\"type\":\"response.completed\"", StringComparison.Ordinal);
+                }
+
+                // Handle critical deserialization failures
+                if (deserializationError is not null && isCriticalCompletionEvent)
+                {
+                    this._logger.LogError("Critical error: Failed to deserialize response.completed event. Emitting failure event.");
+
+                    yield return new StreamingResponseFailed
+                    {
+                        Response = new Response
+                        {
+                            Id = context.ResponseId,
+                            Status = ResponseStatus.Failed,
+                            CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                            Model = "unknown",
+                            Output = [],
+                            Usage = ResponseUsage.Zero,
+                            Tools = [],
+                            Error = new ResponseError
+                            {
+                                Code = "worker_deserialization_error",
+                                Message = "Worker returned malformed completion event: " + deserializationError.Message
+                            }
+                        }
+                    };
+                    yield break;
                 }
 
                 if (streamingEvent is not null)
