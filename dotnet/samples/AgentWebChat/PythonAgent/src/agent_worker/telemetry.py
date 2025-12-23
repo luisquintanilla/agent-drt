@@ -3,6 +3,9 @@
 import logging
 import os
 from opentelemetry import metrics, trace
+# Note: The logs API in OpenTelemetry Python is still in development and not yet stable.
+# The underscore-prefixed imports below are the current recommended way to use logs.
+# See: https://opentelemetry.io/docs/languages/python/
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
