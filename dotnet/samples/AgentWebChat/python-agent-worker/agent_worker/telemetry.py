@@ -116,6 +116,7 @@ def setup_telemetry(
             from pydantic_ai import Agent, InstrumentationSettings
             
             # Use version 3 for full OpenTelemetry Gen AI semantic conventions compliance
+            # Reference: https://opentelemetry.io/docs/specs/semconv/gen-ai/
             # This generates spans like "invoke_agent {agent_name}" with standard attributes:
             # - gen_ai.operation.name, gen_ai.system, gen_ai.request.model
             # - gen_ai.usage.input_tokens, gen_ai.usage.output_tokens

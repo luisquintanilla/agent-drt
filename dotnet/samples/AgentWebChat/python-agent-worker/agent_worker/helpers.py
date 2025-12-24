@@ -134,11 +134,20 @@ class EventStreamContext:
         If an exception occurred:
         - Emits error message as text
         - Emits response.failed with error details
+        - Logs the exception for debugging
         
         Returns:
-            False to propagate exceptions, True to suppress them
+            True to suppress the exception (already handled in protocol)
         """
         if exc_type is not None:
+            # Log the error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(
+                f"Error in agent execution: {exc_type.__name__}: {exc_val}",
+                exc_info=(exc_type, exc_val, exc_tb)
+            )
+            
             # Error occurred - emit failure event
             error_message = f"Error: {str(exc_val)}"
             
@@ -183,7 +192,8 @@ class EventStreamContext:
                 )
             )
             
-            # Suppress the exception (already handled)
+            # Suppress the exception (already handled in protocol)
+            # This is intentional - we've converted it to a proper protocol event
             return True
         
         # Success - emit completion events

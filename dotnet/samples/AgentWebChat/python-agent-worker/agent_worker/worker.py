@@ -207,8 +207,13 @@ class Worker:
             try:
                 await agent.execute(request, context)
             except Exception as e:
-                logger.error(f"Error executing agent '{agent_name}': {e}", exc_info=True)
-                # Error is already handled by EventStreamContext
+                # Log unexpected errors during agent execution
+                # EventStreamContext handles protocol-level error conversion,
+                # but we log here for observability
+                logger.error(
+                    f"Unexpected error executing agent '{agent_name}': {e}",
+                    exc_info=True
+                )
             
             # Convert to SSE format
             async def event_generator():
