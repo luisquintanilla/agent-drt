@@ -8,6 +8,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
 from openai import AsyncAzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+import tiktoken
 
 from ..models import (
     CreateResponse,
@@ -192,15 +193,41 @@ async def execute_travel_itinerary_agent(
         if itinerary.additional_tips:
             formatted_text += f"## Travel Tips:\n{itinerary.additional_tips}\n"
         
-        # Stream the formatted text in chunks
-        chunk_size = 50  # characters per chunk
+        # Stream the formatted text in chunks (word-boundary aware)
+        chunk_size = 100  # characters per chunk target
         full_text = []
+        words = formatted_text.split()
+        current_chunk = []
+        current_length = 0
         
-        for i in range(0, len(formatted_text), chunk_size):
-            chunk = formatted_text[i:i + chunk_size]
+        for word in words:
+            word_with_space = word + " "
+            if current_length + len(word_with_space) > chunk_size and current_chunk:
+                # Emit current chunk
+                chunk = "".join(current_chunk)
+                full_text.append(chunk)
+                
+                yield OutputTextDeltaEvent(
+                    item_id=item_id,
+                    delta=chunk,
+                    output_index=0,
+                    content_index=0,
+                    sequence_number=sequence,
+                )
+                sequence += 1
+                
+                # Start new chunk
+                current_chunk = [word_with_space]
+                current_length = len(word_with_space)
+            else:
+                current_chunk.append(word_with_space)
+                current_length += len(word_with_space)
+        
+        # Emit remaining chunk if any
+        if current_chunk:
+            chunk = "".join(current_chunk)
             full_text.append(chunk)
             
-            # Emit delta
             yield OutputTextDeltaEvent(
                 item_id=item_id,
                 delta=chunk,
@@ -211,7 +238,7 @@ async def execute_travel_itinerary_agent(
             sequence += 1
         
         # Emit output_text.done
-        final_text = "".join(full_text)
+        final_text = "".join(full_text).rstrip()  # Remove trailing space
         yield OutputTextDoneEvent(
             item_id=item_id,
             text=final_text,
@@ -221,9 +248,16 @@ async def execute_travel_itinerary_agent(
         )
         sequence += 1
         
-        # Calculate usage (simple approximation based on text length)
-        input_token_count = len(input_text.split())
-        output_token_count = len(final_text.split())
+        # Calculate usage using tiktoken for accurate token counting
+        try:
+            # Use cl100k_base encoding (used by gpt-4 and gpt-3.5-turbo)
+            encoding = tiktoken.get_encoding("cl100k_base")
+            input_token_count = len(encoding.encode(input_text))
+            output_token_count = len(encoding.encode(final_text))
+        except Exception:
+            # Fallback to word count if tiktoken fails
+            input_token_count = len(input_text.split())
+            output_token_count = len(final_text.split())
         
         # Emit response.completed
         yield ResponseCompletedEvent(
