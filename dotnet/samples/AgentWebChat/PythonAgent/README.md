@@ -34,6 +34,45 @@ uv sync
 uv run uvicorn src.agent_worker.main:app --reload --port 5100
 ```
 
+### OpenTelemetry Configuration
+
+This Python agent is configured to export telemetry (traces, metrics, and logs) to the Aspire dashboard via OpenTelemetry Protocol (OTLP).
+
+**How it works:**
+- The `telemetry.py` module configures OpenTelemetry exporters for tracing, metrics, and logging
+- FastAPI is automatically instrumented to capture HTTP requests and responses
+- The agent reads the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable (automatically set by Aspire)
+- All telemetry data is exported to the Aspire dashboard for visualization
+
+**What gets captured:**
+- **Traces**: HTTP requests to all endpoints, including execution time and status codes
+- **Metrics**: Request counts, response times, and other performance indicators
+- **Logs**: Application logs with correlation to traces for easy debugging
+
+**Configuration:**
+The OpenTelemetry configuration is automatically initialized in `main.py`:
+```python
+from .telemetry import configure_telemetry
+
+# Configure OpenTelemetry for Aspire dashboard integration
+tracer = configure_telemetry(app, service_name="python-agent")
+```
+
+When running with Aspire, no additional configuration is needed. The Aspire AppHost automatically provides:
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - The OTLP endpoint URL
+- `OTEL_SERVICE_NAME` - The service name for telemetry identification
+- Other OpenTelemetry environment variables as needed
+
+**Local Development:**
+To test telemetry locally without Aspire:
+```bash
+# Set the OTLP endpoint (e.g., local Aspire dashboard)
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+
+# Run the application
+uv run uvicorn src.agent_worker.main:app --port 5100
+```
+
 ### Endpoints
 
 - `GET /health` - Health check
