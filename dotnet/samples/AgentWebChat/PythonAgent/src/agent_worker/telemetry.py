@@ -81,4 +81,20 @@ def configure_telemetry(app, service_name: str = "python-agent"):
     # Instrument FastAPI application
     FastAPIInstrumentor.instrument_app(app)
     
+    # Instrument Pydantic AI for OpenTelemetry Gen AI Semantic Conventions
+    # This will automatically trace all agent runs with standard gen_ai.* attributes
+    from pydantic_ai import Agent, InstrumentationSettings
+    
+    # Use version 3 for full OpenTelemetry Gen AI semantic conventions compliance
+    # This generates spans like "invoke_agent {agent_name}" with standard attributes:
+    # - gen_ai.operation.name, gen_ai.system, gen_ai.request.model
+    # - gen_ai.usage.input_tokens, gen_ai.usage.output_tokens
+    # - gen_ai.input.messages, gen_ai.output.messages
+    instrumentation_settings = InstrumentationSettings(
+        version=3,  # Full semantic conventions compliance
+        include_content=True,  # Include prompts and completions in traces
+        include_binary_content=False,  # Don't include images/audio to reduce trace size
+    )
+    Agent.instrument_all(instrumentation_settings)
+    
     return trace.get_tracer(__name__)
