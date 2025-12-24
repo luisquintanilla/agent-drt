@@ -30,7 +30,8 @@ var pythonAgent = builder.AddUvicornApp(
     "src.agent_worker.main:app")
     .WithUv()
     .WithEndpoint("http", endpoint => endpoint.Port = 5100)
-    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"));
+    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"))
+    .WithReference(chatModel);
 
 // Agent host depends on gateway
 var agentHost = builder.AddProject<Projects.AgentWebChat_AgentHost>("agenthost")

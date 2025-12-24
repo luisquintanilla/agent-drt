@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 from .models import CreateResponse, AgentCard
 from .streaming import stream_events
-from .agents import execute_pig_latin_agent
+from .agents import execute_pig_latin_agent, execute_travel_itinerary_agent
 from .telemetry import configure_telemetry
 
 # Configure logging
@@ -30,6 +30,11 @@ AGENTS = {
         "name": "pig-latin-agent",
         "description": "Translates English text to Pig Latin",
         "executor": execute_pig_latin_agent,
+    },
+    "travel-itinerary-agent": {
+        "name": "travel-itinerary-agent",
+        "description": "Generates detailed travel itineraries for locations with attractions and tips",
+        "executor": execute_travel_itinerary_agent,
     }
 }
 
