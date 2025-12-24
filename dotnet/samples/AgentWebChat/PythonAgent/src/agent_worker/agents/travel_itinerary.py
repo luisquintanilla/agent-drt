@@ -46,15 +46,23 @@ def get_travel_agent() -> Agent[None, TravelItinerary]:
     Create and return a Pydantic AI agent configured with Azure OpenAI.
     
     The agent uses environment variables injected by Aspire:
-    - ConnectionStrings__chat-model__Endpoint: Azure OpenAI endpoint
+    - AZURE_OPENAI_ENDPOINT: Azure OpenAI endpoint URL
+    - MODEL_NAME: Azure OpenAI deployment/model name
     """
     # Get Azure OpenAI configuration from environment variables set by Aspire
-    endpoint = os.environ.get("ConnectionStrings__chat-model__Endpoint")
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+    model_name = os.environ.get("MODEL_NAME")
     
     if not endpoint:
         raise ValueError(
             "Azure OpenAI endpoint not found. "
-            "Expected environment variable: ConnectionStrings__chat-model__Endpoint"
+            "Expected environment variable: AZURE_OPENAI_ENDPOINT"
+        )
+    
+    if not model_name:
+        raise ValueError(
+            "Azure OpenAI model name not found. "
+            "Expected environment variable: MODEL_NAME"
         )
     
     # Create Azure credential for authentication
@@ -71,10 +79,9 @@ def get_travel_agent() -> Agent[None, TravelItinerary]:
         api_version="2024-10-21",
     )
     
-    # Create OpenAI model for Pydantic AI
-    # The deployment name is "gpt-4.1" as configured in AppHost
+    # Create OpenAI model for Pydantic AI using the deployment name from environment
     model = OpenAIModel(
-        "gpt-4.1",
+        model_name,
         openai_client=client,
     )
     

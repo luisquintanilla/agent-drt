@@ -156,6 +156,19 @@ builder.Services.AddKeyedSingleton("pig-latin-proxy", (sp, key) =>
     );
 });
 
+// Register Itinieray Planning Python Agent
+builder.Services.AddKeyedSingleton("travel-itinerary-proxy", (sp, key) =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("GatewayClient");
+
+    return new HttpResponseProxyAgent(
+        httpClient: httpClient,
+        agentName: "travel-itinerary-agent", // Routes to Python agent via Gateway
+        description: "Proxy to Python travel-itinerary-agent"
+    );
+});
+
 // Polyglot workflow: .NET writes story, Python translates to Pig Latin
 var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) =>
 {
@@ -163,6 +176,19 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
     {
         sp.GetRequiredKeyedService<AIAgent>("story-writer"),
         sp.GetRequiredKeyedService<HttpResponseProxyAgent>("pig-latin-proxy") // Use proxy instead of direct pig-latin-agent
+    };
+
+    return AgentWorkflowBuilder.BuildSequential(
+        workflowName: key,
+        agents: agents
+    );
+});
+
+var travelWorkflow = builder.AddWorkflow("travel-itinerary-workflow", (sp, key) =>
+{
+    var agents = new AIAgent[]
+    {
+        sp.GetRequiredKeyedService<HttpResponseProxyAgent>("travel-itinerary-proxy") // Use proxy instead of direct travel-itinerary-agent
     };
 
     return AgentWorkflowBuilder.BuildSequential(
