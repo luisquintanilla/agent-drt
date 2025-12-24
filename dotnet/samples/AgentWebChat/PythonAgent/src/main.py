@@ -9,8 +9,8 @@ The Worker handles all infrastructure (FastAPI, telemetry, protocol).
 
 import logging
 from agent_worker import Worker
-from agents.pig_latin import PigLatinAgent
-from agents.travel_itinerary import TravelItineraryAgent
+from .agents.pig_latin import PigLatinAgent
+from .agents.travel_itinerary import TravelItineraryAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
