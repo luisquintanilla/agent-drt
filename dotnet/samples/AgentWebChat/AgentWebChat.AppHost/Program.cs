@@ -4,9 +4,10 @@ using AgentWebChat.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+var chatModelName = "gpt-4.1";
 var azOpenAiResource = builder.AddParameterFromConfiguration("AzureOpenAIName", "AzureOpenAI:Name");
 var azOpenAiResourceGroup = builder.AddParameterFromConfiguration("AzureOpenAIResourceGroup", "AzureOpenAI:ResourceGroup");
-var chatModel = builder.AddAIModel("chat-model").AsAzureOpenAI("gpt-4.1", o => o.AsExisting(azOpenAiResource, azOpenAiResourceGroup));
+var chatModel = builder.AddAIModel("chat-model").AsAzureOpenAI(chatModelName, o => o.AsExisting(azOpenAiResource, azOpenAiResourceGroup));
 
 var storage = builder.AddAzureStorage("storage").RunAsEmulator(emulator => emulator.WithDataBindMount());
 var grainState = storage.AddBlobs("state");
@@ -30,7 +31,11 @@ var pythonAgent = builder.AddUvicornApp(
     "src.agent_worker.main:app")
     .WithUv()
     .WithEndpoint("http", endpoint => endpoint.Port = 5100)
-    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"));
+    .WithReference(chatModel)
+    .WaitFor(chatModel)
+    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"))
+    .WithEnvironment("MODEL_NAME", chatModelName)
+    .WithEnvironment("AZURE_OPENAI_ENDPOINT", $"https://{azOpenAiResource}.openai.azure.com/");
 
 // Agent host depends on gateway
 var agentHost = builder.AddProject<Projects.AgentWebChat_AgentHost>("agenthost")
