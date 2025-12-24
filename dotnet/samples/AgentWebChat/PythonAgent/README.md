@@ -1,6 +1,16 @@
 # Python Agent Worker
 
-This is a Python-based agent worker for the AgentWebChat system. It demonstrates how to build agents in Python that integrate with the .NET-based gateway infrastructure.
+This is a Python-based agent worker for the AgentWebChat system. It demonstrates how to build agents in Python that integrate with the .NET-based gateway infrastructure using the **python-agent-worker framework**.
+
+## Framework-Based Architecture
+
+This worker has been refactored to use the `python-agent-worker` framework, which provides:
+
+✅ **Minimal Boilerplate** - Each agent is ~50-150 lines (previously 200-300+ lines)  
+✅ **Built-in Telemetry** - OpenTelemetry with GenAI semantic conventions enabled by default  
+✅ **Auto-instrumentation** - Pydantic AI spans automatically nested with gen_ai.* attributes  
+✅ **Protocol Abstraction** - No need to understand gateway protocol or event streaming  
+✅ **Error Handling** - Automatic conversion of exceptions to proper protocol events
 
 ## Agents
 
@@ -17,6 +27,14 @@ Input:  "Hello world this is a test"
 Output: "Ellohay orldway isthay isway away esttay"
 ```
 
+### travel-itinerary-agent
+
+Generates detailed travel itineraries using Pydantic AI and Azure OpenAI. Demonstrates:
+- Integration with Pydantic AI framework
+- Automatic GenAI semantic conventions in traces
+- Structured output parsing
+- Token counting with tiktoken
+
 ## Development
 
 ### Prerequisites
@@ -27,66 +45,105 @@ Output: "Ellohay orldway isthay isway away esttay"
 ### Setup
 
 ```bash
-# Install dependencies
+# Install dependencies (includes local python-agent-worker framework)
 uv sync
 
 # Run locally
-uv run uvicorn src.agent_worker.main:app --reload --port 5100
+uv run uvicorn src.main:app --reload --port 5100
+```
+
+### Project Structure
+
+```
+PythonAgent/
+├── src/
+│   ├── main.py              # Worker setup (30 lines)
+│   └── agents/
+│       ├── pig_latin.py     # Pig Latin agent (~130 lines, mostly business logic)
+│       └── travel_itinerary.py  # Travel agent (~170 lines, mostly business logic)
+├── pyproject.toml           # Dependencies (includes local framework)
+└── README.md
 ```
 
 ### OpenTelemetry Configuration
 
-This Python agent is configured to export telemetry (traces, metrics, and logs) to the Aspire dashboard via OpenTelemetry Protocol (OTLP).
-
-**How it works:**
-- The `telemetry.py` module configures OpenTelemetry exporters for tracing, metrics, and logging
-- FastAPI is automatically instrumented to capture HTTP requests and responses
-- The agent reads the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable (automatically set by Aspire)
-- All telemetry data is exported to the Aspire dashboard for visualization
+This agent uses the `python-agent-worker` framework, which configures OpenTelemetry automatically:
 
 **What gets captured:**
-- **Traces**: HTTP requests to all endpoints, including execution time and status codes
-- **Metrics**: Request counts, response times, and other performance indicators
-- **Logs**: Application logs with correlation to traces for easy debugging
+- **Traces**: HTTP requests, agent execution, and child AI operations
+  - HTTP POST /v1/responses spans
+  - Agent execution spans (with custom attributes)
+  - Pydantic AI spans with GenAI semantic conventions:
+    - `gen_ai.operation.name`: "chat"
+    - `gen_ai.request.model`: Model name
+    - `gen_ai.usage.input_tokens`: Input token count
+    - `gen_ai.usage.output_tokens`: Output token count
+    - `gen_ai.input.messages`: Prompts (if enabled)
+    - `gen_ai.output.messages`: Completions (if enabled)
+- **Metrics**: Request counts, response times, token usage
+- **Logs**: Application logs with trace context for correlation
 
 **Configuration:**
-The OpenTelemetry configuration is automatically initialized in `main.py`:
+The framework automatically reads standard OpenTelemetry environment variables:
 ```python
-from .telemetry import configure_telemetry
+# In src/main.py
+from agent_worker import Worker
 
-# Configure OpenTelemetry for Aspire dashboard integration
-tracer = configure_telemetry(app, service_name="python-agent")
+worker = Worker(service_name="python-agent")  # Telemetry enabled by default
 ```
 
 When running with Aspire, no additional configuration is needed. The Aspire AppHost automatically provides:
-- `OTEL_EXPORTER_OTLP_ENDPOINT` - The OTLP endpoint URL
-- `OTEL_SERVICE_NAME` - The service name for telemetry identification
-- Other OpenTelemetry environment variables as needed
+- `OTEL_EXPORTER_OTLP_ENDPOINT` - The OTLP endpoint URL (defaults to http://localhost:4317)
+- `OTEL_SERVICE_NAME` - Optional service name override
 
 **Local Development:**
 To test telemetry locally without Aspire:
 ```bash
-# Set the OTLP endpoint (e.g., local Aspire dashboard)
+# Set the OTLP endpoint (e.g., local OTLP collector)
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 
 # Run the application
-uv run uvicorn src.agent_worker.main:app --port 5100
+uv run uvicorn src.main:app --port 5100
 ```
 
 ### Endpoints
 
+The framework automatically provides these endpoints:
+
 - `GET /health` - Health check
-- `GET /agents` - List available agents
+- `GET /v1/entities` - List available agents (discovery)
 - `POST /v1/responses` - Execute agent (OpenAI Responses API format)
 - `GET /` - Service info
 
 ## Architecture
 
+### Framework-Based Design
+
+This worker uses the `python-agent-worker` framework:
+
+```
+src/main.py (Worker setup)
+    ↓
+Worker.register_agent(PigLatinAgent())
+Worker.register_agent(TravelItineraryAgent())
+    ↓
+python-agent-worker framework handles:
+- FastAPI setup and routing
+- Protocol event streaming
+- OpenTelemetry instrumentation
+- Error handling
+    ↓
+Agent developers only write:
+- execute() method with business logic
+- Input extraction
+- Output generation
+```
+
 ### Worker Contract
 
-This worker implements the gateway's execution contract:
+The framework implements the gateway's execution contract:
 
-1. **Discovery** (`GET /agents`): Returns list of supported agents
+1. **Discovery** (`GET /v1/entities`): Returns list of supported agents
 2. **Execution** (`POST /v1/responses`):
    - Accepts `CreateResponse` request
    - Returns SSE stream with `StreamingResponseEvent` objects
@@ -98,221 +155,48 @@ The gateway handles:
 - Stream caching and resumption
 - Worker health monitoring
 
-### Request/Response Flow
-
-```
-Client → Gateway → Python Worker
-         ↓
-    1. POST /v1/responses
-    2. Agent name: "pig-latin-agent"
-    3. Input: "Hello world"
-         ↓
-    Python Worker:
-    - Validates agent exists
-    - Executes pig_latin.translate_to_pig_latin()
-    - Streams events back:
-      * response.created
-      * response.in_progress
-      * response.output_item.added
-      * response.output_text.delta (chunked)
-      * response.output_text.done
-      * response.completed
-         ↓
-    Gateway:
-    - Caches all events
-    - Returns to client
-```
-
-### Event Streaming
-
-The worker uses Server-Sent Events (SSE) to stream responses:
-
-```python
-# FastAPI endpoint
-@app.post("/v1/responses")
-async def create_response(request: CreateResponse):
-    # Execute agent
-    event_stream = execute_pig_latin_agent(request, response_id)
-    
-    # Convert to SSE format
-    sse_stream = stream_events(event_stream)
-    
-    return EventSourceResponse(sse_stream)
-```
-
-Each event is formatted as:
-```
-data: {"type":"response.output_text.delta","sequence_number":3,"delta":"Ellohay ","output_index":0}
-
-```
-
 ## Adding New Agents
 
-### Step 1: Create Agent Module
+With the framework, adding a new agent is simple:
 
-Create a new file in `src/agent_worker/agents/`:
+### Step 1: Create Agent Class
 
-```python
-# src/agent_worker/agents/my_agent.py
-
-from typing import AsyncIterator
-from ..models import (
-    CreateResponse,
-    ResponseCreatedEvent,
-    ResponseInProgressEvent,
-    OutputItemAddedEvent,
-    OutputTextDeltaEvent,
-    OutputTextDoneEvent,
-    ResponseCompletedEvent,
-    StreamingResponseEvent,
-)
-
-async def execute_my_agent(
-    request: CreateResponse,
-    response_id: str,
-) -> AsyncIterator[StreamingResponseEvent]:
-    """Execute my custom agent."""
-    sequence = 0
-    
-    # Extract input
-    input_text = request.input if isinstance(request.input, str) else ""
-    
-    # Emit response.created
-    yield ResponseCreatedEvent(
-        response_id=response_id,
-        sequence_number=sequence,
-    )
-    sequence += 1
-    
-    # Emit response.in_progress
-    yield ResponseInProgressEvent(sequence_number=sequence)
-    sequence += 1
-    
-    # Emit output_item.added
-    yield OutputItemAddedEvent(
-        item_id=f"{response_id}_item_0",
-        output_index=0,
-        sequence_number=sequence,
-    )
-    sequence += 1
-    
-    # Your agent logic here
-    result = f"Processed: {input_text}"
-    
-    # Emit output delta
-    yield OutputTextDeltaEvent(
-        delta=result,
-        output_index=0,
-        sequence_number=sequence,
-    )
-    sequence += 1
-    
-    # Emit output done
-    yield OutputTextDoneEvent(
-        text=result,
-        output_index=0,
-        sequence_number=sequence,
-    )
-    sequence += 1
-    
-    # Emit response.completed
-    yield ResponseCompletedEvent(sequence_number=sequence)
-```
-
-### Step 2: Register in Main App
-
-Update `src/agent_worker/main.py`:
+Create a new file in `src/agents/`:
 
 ```python
-from .agents import execute_pig_latin_agent, execute_my_agent
+# src/agents/my_agent.py
+from agent_worker import WorkerAgent, EventStreamContext
 
-AGENTS = {
-    "pig-latin-agent": {
-        "name": "pig-latin-agent",
-        "description": "Translates English text to Pig Latin",
-        "executor": execute_pig_latin_agent,
-    },
-    "my-agent": {
-        "name": "my-agent",
-        "description": "My custom agent",
-        "executor": execute_my_agent,
-    }
-}
+class MyAgent(WorkerAgent):
+    def __init__(self):
+        super().__init__(
+            name="my-agent",
+            description="My custom agent"
+        )
+    
+    async def execute(self, request, context: EventStreamContext):
+        # Extract input
+        input_text = request.input if isinstance(request.input, str) else ""
+        
+        # Use context manager for event streaming
+        async with context:
+            result = f"Processed: {input_text}"
+            await context.emit_text(result)
+            context.add_usage(input_tokens=5, output_tokens=10)
 ```
 
-### Step 3: Update Exports
+### Step 2: Register in Main
 
-Update `src/agent_worker/agents/__init__.py`:
+Update `src/main.py`:
 
 ```python
-from .pig_latin import execute_pig_latin_agent
-from .my_agent import execute_my_agent
+from agents.my_agent import MyAgent
 
-__all__ = ["execute_pig_latin_agent", "execute_my_agent"]
+# Add to worker
+worker.register_agent(MyAgent())
 ```
 
-Your agent is now automatically discovered by the gateway!
-
-## Integration with .NET Workflows
-
-Python agents can be used in .NET workflows through the gateway. The .NET code creates a proxy agent that calls the Python agent via the gateway's Responses API.
-
-### Example: Polyglot Workflow
-
-```csharp
-// In .NET AgentHost/Program.cs
-
-// Story writer agent (.NET)
-var storyWriterAgent = builder.AddAIAgent(
-    "story-writer",
-    instructions: "Write short, imaginative stories (2-3 sentences).",
-    chatClientServiceKey: "chat-model");
-
-// Python pig latin agent (proxy)
-builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-agent", (sp, key) =>
-{
-    var gatewayUrl = builder.Configuration["Worker:GatewayBaseAddress"];
-    var httpClient = new HttpClient { BaseAddress = new Uri(gatewayUrl) };
-    
-    var options = new OpenAIClientOptions
-    {
-        Endpoint = new Uri(httpClient.BaseAddress!, "/v1/"),
-        Transport = new HttpClientPipelineTransport(httpClient)
-    };
-    
-    var responseClient = new OpenAIResponseClient(
-        model: "pig-latin-agent",
-        credential: new ApiKeyCredential("dummy-key"),
-        options: options
-    );
-    
-    return new OpenAIResponseClientAgent(responseClient, name: "pig-latin-agent");
-});
-
-// Polyglot workflow: .NET → Python
-var workflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) =>
-{
-    var agents = new AIAgent[]
-    {
-        sp.GetRequiredKeyedService<AIAgent>("story-writer"),
-        sp.GetRequiredKeyedService<AIAgent>("pig-latin-agent")
-    };
-    
-    return AgentWorkflowBuilder.BuildSequential(workflowName: key, agents: agents);
-}).AddAsAIAgent();
-```
-
-### How It Works
-
-1. User sends request to "polyglot-story-workflow"
-2. .NET `story-writer` agent generates a story
-3. Output is passed to `pig-latin-agent` proxy
-4. Proxy sends request to Gateway's `/v1/responses` with `model: "pig-latin-agent"`
-5. Gateway discovers Python worker supports "pig-latin-agent"
-6. Gateway forwards to Python worker's `/v1/responses`
-7. Python worker executes translation and streams back
-8. Gateway caches and returns to .NET
-9. Workflow completes with Pig Latin story
+That's it! The framework handles all protocol and telemetry concerns.
 
 ## Testing
 
@@ -323,7 +207,7 @@ var workflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) =>
 curl http://localhost:5100/health
 
 # Discover agents
-curl http://localhost:5100/agents
+curl http://localhost:5100/v1/entities
 
 # Execute agent
 curl -X POST http://localhost:5100/v1/responses \
@@ -338,7 +222,7 @@ curl -X POST http://localhost:5100/v1/responses \
 
 ```bash
 # Gateway discovers Python agents
-curl http://localhost:5390/agents
+curl http://localhost:5390/v1/entities
 
 # Execute through gateway
 curl -X POST http://localhost:5390/v1/responses \
@@ -361,7 +245,7 @@ The Python worker is registered in the Aspire AppHost:
 var pythonAgent = builder.AddPythonApp(
     name: "python-agent",
     projectDirectory: "../PythonAgent",
-    scriptPath: "src/agent_worker/main.py")
+    scriptPath: "src/main.py")
     .WithHttpEndpoint(port: 5100, name: "http")
     .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"));
 ```
@@ -372,73 +256,17 @@ cd AgentWebChat
 aspire run
 ```
 
-## Future Enhancements
+## Integration with .NET Workflows
 
-### Auto-Registration
-
-Currently, the Python worker is registered statically in the AppHost. For dynamic environments, you can implement auto-registration:
-
-```python
-import os
-import httpx
-from contextlib import asynccontextmanager
-
-async def register_with_gateway(gateway_url: str, worker_url: str):
-    """Register this worker with the gateway on startup."""
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{gateway_url}/workers/registrations",
-            json={
-                "hostId": "python-worker-1",
-                "endpoint": worker_url,
-                "healthPath": "/health",
-                "discoveryPath": "/agents"
-            }
-        )
-        response.raise_for_status()
-        print(f"Registered with gateway: {response.json()}")
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    gateway_url = os.getenv("GATEWAY_URL")
-    worker_url = os.getenv("WORKER_URL")
-    if gateway_url and worker_url:
-        await register_with_gateway(gateway_url, worker_url)
-    
-    yield
-    
-    # Shutdown - could deregister here
-
-app = FastAPI(lifespan=lifespan)
-```
-
-**Benefits:**
-- Dynamic worker discovery
-- Automatic health heartbeats
-- Works in cloud environments
-- No manual configuration needed
-
-**Trade-offs:**
-- More complex startup logic
-- Need to determine network addresses
-- Potential race conditions if gateway isn't ready
+Python agents can be used in .NET workflows through the gateway. The .NET code creates a proxy agent that calls the Python agent via the gateway's Responses API. See the AgentWebChat documentation for examples of polyglot workflows.
 
 ## Troubleshooting
 
 ### Worker Not Discovered
 
 1. Check worker is running: `curl http://localhost:5100/health`
-2. Check agents endpoint: `curl http://localhost:5100/agents`
+2. Check agents endpoint: `curl http://localhost:5100/v1/entities`
 3. Check gateway can reach worker (network/firewall)
-4. Verify gateway worker registration if using auto-registration
-
-### Streaming Issues
-
-1. Ensure Content-Type is `text/event-stream`
-2. Check events are formatted correctly: `data: {json}\n\n`
-3. Verify sequence numbers increment properly
-4. Check all required events are emitted (created, in_progress, completed)
 
 ### Import Errors
 
@@ -449,6 +277,13 @@ uv sync
 # Check Python version
 python --version  # Should be 3.12+
 ```
+
+## Framework Documentation
+
+For more information about the `python-agent-worker` framework, see:
+- `../python-agent-worker/README.md` - Framework documentation
+- `../python-agent-worker/examples/` - Example agents
+- `../docs/PYTHON_AGENT_WORKER_TECHNICAL_SPEC.md` - Technical specification
 
 ## License
 
