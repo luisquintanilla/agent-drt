@@ -5,7 +5,8 @@ import time
 from typing import AsyncIterator
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.azure import AzureProvider
 from openai import AsyncAzureOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 import tiktoken
@@ -72,23 +73,23 @@ def get_travel_agent() -> Agent[None, TravelItinerary]:
         "https://cognitiveservices.azure.com/.default"
     )
     
-    # Create Azure OpenAI client
+    # Create Azure OpenAI client with token-based authentication
     client = AsyncAzureOpenAI(
         azure_endpoint=endpoint,
         azure_ad_token_provider=token_provider,
         api_version="2024-10-21",
     )
     
-    # Create OpenAI model for Pydantic AI using the deployment name from environment
-    model = OpenAIModel(
+    # Create Pydantic AI model using AzureProvider with custom client
+    model = OpenAIChatModel(
         model_name,
-        openai_client=client,
+        provider=AzureProvider(openai_client=client),
     )
     
     # Create and configure the agent
     agent = Agent(
         model,
-        result_type=TravelItinerary,
+        output_type=TravelItinerary,
         system_prompt=(
             "You are an expert travel guide. "
             "Provide detailed information about popular attractions in the specified location. "
@@ -182,7 +183,7 @@ async def execute_travel_itinerary_agent(
         result = await agent.run(input_text)
         
         # Extract the structured output
-        itinerary: TravelItinerary = result.data
+        itinerary: TravelItinerary = result.output
         
         # Format the itinerary as text for streaming
         formatted_text = f"# Travel Itinerary for {itinerary.location}\n\n"

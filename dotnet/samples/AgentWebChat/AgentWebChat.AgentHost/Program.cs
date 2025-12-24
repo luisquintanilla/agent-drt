@@ -184,11 +184,13 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
     );
 });
 
-var travelWorkflow = builder.AddWorkflow("travel-itinerary-workflow", (sp, key) =>
+// Write stories based on travel itineraries
+var travelWorkflow = builder.AddWorkflow("travel-journal-workflow", (sp, key) =>
 {
     var agents = new AIAgent[]
     {
-        sp.GetRequiredKeyedService<HttpResponseProxyAgent>("travel-itinerary-proxy") // Use proxy instead of direct travel-itinerary-agent
+        sp.GetRequiredKeyedService<HttpResponseProxyAgent>("travel-itinerary-proxy"), // Use proxy instead of direct travel-itinerary-agent
+        sp.GetRequiredKeyedService<AIAgent>("story-writer"),
     };
 
     return AgentWorkflowBuilder.BuildSequential(
