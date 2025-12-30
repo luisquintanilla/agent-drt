@@ -42,7 +42,7 @@ internal sealed class WorkerRegistryEntityProvider : IEntityProvider
             {
                 foreach (var (entityName, entityInfo) in entities)
                 {
-                    if (!allEntities.ContainsKey(entityName))
+                    if (!string.IsNullOrEmpty(entityName) && !allEntities.ContainsKey(entityName))
                     {
                         allEntities[entityName] = entityInfo;
                     }
@@ -52,7 +52,11 @@ internal sealed class WorkerRegistryEntityProvider : IEntityProvider
 
         foreach (var entityInfo in allEntities.Values)
         {
-            yield return entityInfo;
+            // Additional safety: ensure entity has valid ID before yielding
+            if (!string.IsNullOrEmpty(entityInfo.Id))
+            {
+                yield return entityInfo;
+            }
         }
     }
 

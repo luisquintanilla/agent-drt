@@ -149,8 +149,13 @@ class Worker:
             return {
                 "entities": [
                     {
+                        "id": agent.name,
                         "name": agent.name,
+                        "type": "agent",
                         "description": agent.description,
+                        "framework": "python",
+                        "tools": [],
+                        "metadata": {},
                     }
                     for agent in self.agents.values()
                 ]
