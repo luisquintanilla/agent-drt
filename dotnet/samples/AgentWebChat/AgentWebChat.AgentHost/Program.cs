@@ -142,8 +142,13 @@ builder.Services.AddHttpClient("GatewayClient", (sp, client) =>
 });
 
 // Register proxy agent that calls Python agent through Gateway
-// NOTE: Using AddKeyedSingleton instead of AddAIAgent to prevent circular discovery!
-// The Gateway should discover pig-latin-agent from PythonAgent, not from AgentHost
+// NOTE: Register as HttpResponseProxyAgent (not AIAgent) to prevent DevUI's built-in
+// entity provider from discovering it. 
+// NOTE: Proxy agents (HttpResponseProxyAgent) are NOT exposed via DevUI.
+// They are internal implementation details used only by workflows to call remote Python agents.
+// Users interact with:
+//   - Real Python agents directly via Gateway
+//   - .NET workflows that internally use these proxies
 builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-proxy", (sp, key) =>
 {
     var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
@@ -162,7 +167,7 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
     var agents = new AIAgent[]
     {
         sp.GetRequiredKeyedService<AIAgent>("story-writer"),
-        sp.GetRequiredKeyedService<AIAgent>("pig-latin-proxy") // Use proxy instead of direct pig-latin-agent
+        sp.GetRequiredKeyedService<AIAgent>("pig-latin-proxy") // HttpResponseProxyAgent inherits from AIAgent
     };
 
     return AgentWorkflowBuilder.BuildSequential(
@@ -171,7 +176,14 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
     );
 });
 
-// Register Itinieray Planning Python Agent
+// Register Itinerary Planning Python Agent
+// NOTE: Register as HttpResponseProxyAgent (not AIAgent) to prevent DevUI's built-in
+// entity provider from discovering it. 
+// NOTE: Proxy agents (HttpResponseProxyAgent) are NOT exposed via DevUI.
+// They are internal implementation details used only by workflows to call remote Python agents.
+// Users interact with:
+//   - Real Python agents directly via Gateway
+//   - .NET workflows that internally use these proxies
 builder.Services.AddKeyedSingleton("travel-itinerary-proxy", (sp, key) =>
 {
     var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
