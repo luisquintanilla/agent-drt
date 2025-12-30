@@ -5,9 +5,9 @@ A lightweight, reusable framework for building Python agents that integrate seam
 ## Features
 
 ✅ **Minimal Boilerplate** - Write 10-20 lines of business logic, not 100+ lines of protocol code  
-✅ **Built-in Telemetry** - OpenTelemetry with GenAI semantic conventions enabled by default  
-✅ **Framework Agnostic** - Works with Pydantic AI, Agent Framework, OpenAI SDK, or custom code  
-✅ **Auto-instrumentation** - Child spans from AI frameworks automatically nested in traces  
+✅ **Built-in Telemetry** - OpenTelemetry infrastructure configured automatically  
+✅ **Framework Agnostic** - No AI framework dependencies; works with any AI library  
+✅ **Explicit Instrumentation** - Users control which AI frameworks to instrument and how  
 ✅ **Type Safe** - Full Pydantic validation and Python type hints  
 ✅ **Production Ready** - Error handling, logging, health checks built-in
 
@@ -72,11 +72,11 @@ That's it! You now have a fully functional agent with:
 
 ## Using with Pydantic AI
 
-The framework automatically instruments Pydantic AI with GenAI semantic conventions:
+The framework provides OpenTelemetry infrastructure. You explicitly instrument your chosen AI framework:
 
 ```python
 from agent_worker import Worker, WorkerAgent, EventStreamContext
-from pydantic_ai import Agent
+from pydantic_ai import Agent, InstrumentationSettings
 from pydantic import BaseModel
 
 class TravelItinerary(BaseModel):
@@ -100,7 +100,7 @@ class TravelAgent(WorkerAgent):
         input_text = request.input if isinstance(request.input, str) else ""
         
         async with context:
-            # Call Pydantic AI - automatically creates child spans with gen_ai.* attributes
+            # Call Pydantic AI - creates child spans with gen_ai.* attributes
             result = await self.ai_agent.run(input_text)
             itinerary = result.output
             
@@ -109,8 +109,16 @@ class TravelAgent(WorkerAgent):
             output += f"Attractions: {', '.join(itinerary.attractions)}"
             await context.emit_text(output)
 
-# Set up worker
+# Set up worker (configures OpenTelemetry)
 worker = Worker(service_name="travel-worker")
+
+# Explicitly instrument Pydantic AI (after Worker setup)
+Agent.instrument_all(InstrumentationSettings(
+    version=3,  # GenAI semantic conventions v3
+    include_content=True,  # Include prompts/completions in traces
+))
+
+# Register agents
 worker.register_agent(TravelAgent())
 app = worker.app
 ```
@@ -168,12 +176,14 @@ async def execute(self, request, context):
 
 ## Telemetry
 
-Telemetry is **required and enabled by default**. The framework sets up:
+Telemetry is **enabled by default** and provides OpenTelemetry infrastructure:
 
-- **Tracing**: All HTTP requests, agent executions, and child operations
-- **Metrics**: Request counts, latencies, token usage
+- **Tracing**: HTTP requests, agent executions, and child operations
+- **Metrics**: Request counts, latencies, token usage  
 - **Logging**: Structured logs with trace context
-- **GenAI Conventions**: Automatic `gen_ai.*` attributes for AI operations
+- **FastAPI Instrumentation**: Automatic HTTP span creation
+
+**AI Framework Instrumentation**: The framework does NOT automatically instrument AI libraries. You must explicitly instrument your chosen framework (Pydantic AI, OpenAI SDK, LangChain, etc.) after Worker initialization to enable GenAI semantic conventions.
 
 ### Configuration
 
@@ -269,7 +279,6 @@ def setup_telemetry(
     app: FastAPI,
     service_name: str = "python-agent-worker",
     otlp_endpoint: Optional[str] = None,
-    enable_pydantic_ai: bool = True,
 ) -> trace.Tracer: ...
 ```
 

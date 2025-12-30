@@ -24,6 +24,20 @@ worker = Worker(
     version="0.1.0",
 )
 
+# Instrument Pydantic AI with GenAI semantic conventions
+# This must happen AFTER worker initialization (which sets up the tracer provider)
+try:
+    from pydantic_ai import Agent, InstrumentationSettings
+    
+    Agent.instrument_all(InstrumentationSettings(
+        version=3,  # Full GenAI semantic conventions compliance
+        include_content=True,  # Include prompts and completions in traces
+        include_binary_content=False,  # Don't include images/audio to reduce trace size
+    ))
+    logger.info("Pydantic AI instrumented with GenAI semantic conventions")
+except ImportError:
+    logger.warning("Pydantic AI not installed - AI framework instrumentation skipped")
+
 # Register agents
 worker.register_agent(PigLatinAgent())
 worker.register_agent(TravelItineraryAgent())

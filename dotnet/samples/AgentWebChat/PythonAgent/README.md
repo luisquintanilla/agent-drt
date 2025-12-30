@@ -7,8 +7,8 @@ This is a Python-based agent worker for the AgentWebChat system. It demonstrates
 This worker has been refactored to use the `python-agent-worker` framework, which provides:
 
 ✅ **Minimal Boilerplate** - Each agent is ~50-150 lines (previously 200-300+ lines)  
-✅ **Built-in Telemetry** - OpenTelemetry with GenAI semantic conventions enabled by default  
-✅ **Auto-instrumentation** - Pydantic AI spans automatically nested with gen_ai.* attributes  
+✅ **Built-in Telemetry** - OpenTelemetry infrastructure configured automatically  
+✅ **Framework Agnostic** - Works with any AI library (Pydantic AI, OpenAI SDK, etc.)  
 ✅ **Protocol Abstraction** - No need to understand gateway protocol or event streaming  
 ✅ **Error Handling** - Automatic conversion of exceptions to proper protocol events
 
@@ -67,13 +67,13 @@ PythonAgent/
 
 ### OpenTelemetry Configuration
 
-This agent uses the `python-agent-worker` framework, which configures OpenTelemetry automatically:
+This agent uses the `python-agent-worker` framework for OpenTelemetry infrastructure:
 
 **What gets captured:**
 - **Traces**: HTTP requests, agent execution, and child AI operations
   - HTTP POST /v1/responses spans
   - Agent execution spans (with custom attributes)
-  - Pydantic AI spans with GenAI semantic conventions:
+  - Pydantic AI spans with GenAI semantic conventions (when instrumented):
     - `gen_ai.operation.name`: "chat"
     - `gen_ai.request.model`: Model name
     - `gen_ai.usage.input_tokens`: Input token count
@@ -84,12 +84,20 @@ This agent uses the `python-agent-worker` framework, which configures OpenTeleme
 - **Logs**: Application logs with trace context for correlation
 
 **Configuration:**
-The framework automatically reads standard OpenTelemetry environment variables:
+The framework provides OpenTelemetry infrastructure. AI frameworks are explicitly instrumented:
 ```python
 # In src/main.py
 from agent_worker import Worker
+from pydantic_ai import Agent, InstrumentationSettings
 
-worker = Worker(service_name="python-agent")  # Telemetry enabled by default
+# Step 1: Setup OpenTelemetry infrastructure
+worker = Worker(service_name="python-agent")
+
+# Step 2: Explicitly instrument Pydantic AI
+Agent.instrument_all(InstrumentationSettings(
+    version=3,
+    include_content=True,
+))
 ```
 
 When running with Aspire, no additional configuration is needed. The Aspire AppHost automatically provides:
@@ -122,15 +130,18 @@ The framework automatically provides these endpoints:
 This worker uses the `python-agent-worker` framework:
 
 ```
-src/main.py (Worker setup)
+src/main.py
     ↓
-Worker.register_agent(PigLatinAgent())
-Worker.register_agent(TravelItineraryAgent())
+1. Create Worker (sets up OpenTelemetry infrastructure)
+    ↓
+2. Instrument AI frameworks (explicit, user-controlled)
+    ↓
+3. Register agents
     ↓
 python-agent-worker framework handles:
 - FastAPI setup and routing
 - Protocol event streaming
-- OpenTelemetry instrumentation
+- OpenTelemetry infrastructure (providers, exporters)
 - Error handling
     ↓
 Agent developers only write:
@@ -220,12 +231,14 @@ curl -X POST http://localhost:5100/v1/responses \
 
 ### Via Gateway
 
+When running with Aspire, the gateway provides a unified API for all agents (both .NET and Python). The gateway's URL is shown in the Aspire dashboard.
+
 ```bash
-# Gateway discovers Python agents
-curl http://localhost:5390/v1/entities
+# Gateway discovers Python agents (along with .NET agents)
+curl http://<gateway-url>/v1/entities
 
 # Execute through gateway
-curl -X POST http://localhost:5390/v1/responses \
+curl -X POST http://<gateway-url>/v1/responses \
   -H "Content-Type: application/json" \
   -d '{
     "agent": {"name": "pig-latin-agent"},
@@ -233,6 +246,12 @@ curl -X POST http://localhost:5390/v1/responses \
     "stream": false
   }'
 ```
+
+The gateway provides additional features:
+- **Unified discovery**: Single endpoint for all agents across languages
+- **Durable execution**: Request state persisted and recoverable
+- **Worker health monitoring**: Automatic retry and failover
+- **Stream caching**: Efficient handling of repeated/resumed requests
 
 ## Deployment
 
@@ -242,19 +261,26 @@ The Python worker is registered in the Aspire AppHost:
 
 ```csharp
 // In AgentWebChat.AppHost/Program.cs
-var pythonAgent = builder.AddPythonApp(
-    name: "python-agent",
-    projectDirectory: "../PythonAgent",
-    scriptPath: "src/main.py")
-    .WithHttpEndpoint(port: 5100, name: "http")
-    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"));
+var pythonAgent = builder.AddUvicornApp(
+    "python-agent",
+    "../PythonAgent",
+    "src.main:app")
+    .WithUv()
+    .WithEndpoint("http", endpoint => endpoint.Port = 5100)
+    .WithReference(chatModel)
+    .WaitFor(chatModel)
+    .WithEnvironment("GATEWAY_URL", gateway.GetEndpoint("http"))
+    .WithEnvironment("MODEL_NAME", chatModelName)
+    .WithEnvironment("AZURE_OPENAI_ENDPOINT", $"https://{azOpenAiResource}.openai.azure.com/");
 ```
 
 Start everything with:
 ```bash
-cd AgentWebChat
-aspire run
+cd AgentWebChat.AppHost
+dotnet run
 ```
+
+Or open the solution in Visual Studio and run the AppHost project.
 
 ## Integration with .NET Workflows
 

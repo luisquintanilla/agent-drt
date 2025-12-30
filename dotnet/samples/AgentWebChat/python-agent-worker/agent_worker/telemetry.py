@@ -33,22 +33,23 @@ def setup_telemetry(
     app,
     service_name: str = "python-agent-worker",
     otlp_endpoint: Optional[str] = None,
-    enable_pydantic_ai: bool = True,
 ) -> trace.Tracer:
     """
-    Configure OpenTelemetry for FastAPI application with GenAI semantic conventions.
+    Configure OpenTelemetry for FastAPI application.
     
     This function sets up tracing, metrics, and logging to export to the Aspire dashboard
-    via OTLP (OpenTelemetry Protocol). It also enables automatic instrumentation for
-    Pydantic AI and other AI frameworks.
+    via OTLP (OpenTelemetry Protocol). It configures providers, exporters, and instruments
+    FastAPI and logging automatically.
+    
+    Note: This function does NOT automatically instrument AI frameworks. Users should
+    explicitly instrument their chosen AI framework (e.g., Pydantic AI, OpenAI SDK)
+    after calling this function to ensure proper trace context.
     
     Args:
         app: The FastAPI application instance
         service_name: The name to identify this service in telemetry data
         otlp_endpoint: Optional OTLP endpoint URL. If not provided, reads from
                       OTEL_EXPORTER_OTLP_ENDPOINT env var or uses http://localhost:4317
-        enable_pydantic_ai: Whether to automatically instrument Pydantic AI with
-                           GenAI semantic conventions (default: True)
         
     Returns:
         A tracer instance for creating custom spans
@@ -56,9 +57,13 @@ def setup_telemetry(
     Example:
         >>> from fastapi import FastAPI
         >>> from agent_worker.telemetry import setup_telemetry
+        >>> from pydantic_ai import Agent, InstrumentationSettings
         >>> 
         >>> app = FastAPI()
         >>> tracer = setup_telemetry(app, service_name="my-agent")
+        >>> 
+        >>> # Explicitly instrument your AI framework
+        >>> Agent.instrument_all(InstrumentationSettings(version=3, include_content=True))
     """
     # Get OTLP endpoint from parameter, environment, or use default
     if otlp_endpoint is None:
@@ -109,32 +114,5 @@ def setup_telemetry(
     
     # Instrument FastAPI application
     FastAPIInstrumentor.instrument_app(app)
-    
-    # Instrument Pydantic AI for OpenTelemetry GenAI Semantic Conventions
-    if enable_pydantic_ai:
-        try:
-            from pydantic_ai import Agent, InstrumentationSettings
-            
-            # Use version 3 for full OpenTelemetry Gen AI semantic conventions compliance
-            # Reference: https://opentelemetry.io/docs/specs/semconv/gen-ai/
-            # This generates spans like "invoke_agent {agent_name}" with standard attributes:
-            # - gen_ai.operation.name, gen_ai.system, gen_ai.request.model
-            # - gen_ai.usage.input_tokens, gen_ai.usage.output_tokens
-            # - gen_ai.input.messages, gen_ai.output.messages
-            instrumentation_settings = InstrumentationSettings(
-                version=3,  # Full semantic conventions compliance
-                include_content=True,  # Include prompts and completions in traces
-                include_binary_content=False,  # Don't include images/audio to reduce trace size
-            )
-            Agent.instrument_all(instrumentation_settings)
-            
-            logging.getLogger(__name__).info(
-                "Pydantic AI instrumented with GenAI semantic conventions (version 3)"
-            )
-        except ImportError:
-            logging.getLogger(__name__).warning(
-                "Pydantic AI not available - skipping instrumentation. "
-                "Install pydantic-ai to enable automatic GenAI semantic conventions."
-            )
     
     return trace.get_tracer(__name__)
