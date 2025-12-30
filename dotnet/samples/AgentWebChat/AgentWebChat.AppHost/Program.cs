@@ -28,7 +28,7 @@ var gateway = builder.AddProject<Projects.AgentGateway>("gateway")
 var pythonAgent = builder.AddUvicornApp(
     "python-agent",
     "../PythonAgent",
-    "src.agent_worker.main:app")
+    "src.main:app")
     .WithUv()
     .WithEndpoint("http", endpoint => endpoint.Port = 5100)
     .WithReference(chatModel)

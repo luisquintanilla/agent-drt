@@ -1,8 +1,19 @@
 # Copyright (c) Microsoft. All rights reserved.
 
+"""
+Protocol models for AgentGateway communication.
+
+This module provides Pydantic models that match the AgentGateway's
+OpenAI Responses API-compatible protocol.
+"""
+
 from .models import (
-    CreateResponse,
     AgentResource,
+    CreateResponse,
+    ResponseUsage,
+    ResponseStatus,
+    ItemContent,
+    ItemResource,
     StreamingResponseEvent,
     ResponseCreatedEvent,
     ResponseInProgressEvent,
@@ -15,8 +26,12 @@ from .models import (
 )
 
 __all__ = [
-    "CreateResponse",
     "AgentResource",
+    "CreateResponse",
+    "ResponseUsage",
+    "ResponseStatus",
+    "ItemContent",
+    "ItemResource",
     "StreamingResponseEvent",
     "ResponseCreatedEvent",
     "ResponseInProgressEvent",

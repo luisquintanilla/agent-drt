@@ -1,5 +1,11 @@
 # Copyright (c) Microsoft. All rights reserved.
 
+"""
+Pydantic models for AgentGateway protocol.
+
+These models match the OpenAI Responses API specification used by AgentGateway.
+"""
+
 from typing import Any, Literal
 from pydantic import BaseModel, Field
 
@@ -13,10 +19,13 @@ class CreateResponse(BaseModel):
     """
     Request schema for POST /v1/responses endpoint.
     Subset of OpenAI Responses API specification.
+    
+    Note: Some fields use `Any` type to match the flexible OpenAI Responses API
+    specification, which allows various input formats (string, message arrays, etc.)
     """
     agent: AgentResource | None = None
     model: str | None = None  # Fallback if agent not provided
-    input: str | list[dict[str, Any]]
+    input: str | list[dict[str, Any]]  # Flexible input: string or message array
     instructions: str | None = None
     metadata: dict[str, str] | None = None
     stream: bool = False
@@ -119,7 +128,7 @@ class ResponseFailedEvent(StreamingResponseEvent):
 
 class AgentCard(BaseModel):
     """
-    Agent discovery card returned by GET /agents endpoint.
+    Agent discovery card returned by GET /v1/entities endpoint.
     """
     name: str
     description: str | None = None
