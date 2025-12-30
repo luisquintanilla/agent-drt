@@ -37,8 +37,8 @@ class ResponseUsage(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     total_tokens: int = 0
-    input_tokens_details: dict[str, Any] | None = None
-    output_tokens_details: dict[str, Any] | None = None
+    input_tokens_details: dict[str, Any] = Field(default_factory=lambda: {"cached_tokens": 0})
+    output_tokens_details: dict[str, Any] = Field(default_factory=lambda: {"reasoning_tokens": 0})
 
 
 class ResponseStatus(BaseModel):

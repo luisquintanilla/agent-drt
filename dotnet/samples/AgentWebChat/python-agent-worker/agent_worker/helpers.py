@@ -294,10 +294,9 @@ class EventStreamContext:
         self.usage.input_tokens = input_tokens
         self.usage.output_tokens = output_tokens
         self.usage.total_tokens = input_tokens + output_tokens
-        if input_tokens_details:
-            self.usage.input_tokens_details = input_tokens_details
-        if output_tokens_details:
-            self.usage.output_tokens_details = output_tokens_details
+        # Always set these fields, merging with defaults to ensure they exist
+        self.usage.input_tokens_details = input_tokens_details or {"cached_tokens": 0}
+        self.usage.output_tokens_details = output_tokens_details or {"reasoning_tokens": 0}
 
 
 async def stream_events(
