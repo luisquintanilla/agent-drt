@@ -149,17 +149,7 @@ builder.Services.AddHttpClient("GatewayClient", (sp, client) =>
 // Users interact with:
 //   - Real Python agents directly via Gateway
 //   - .NET workflows that internally use these proxies
-builder.Services.AddKeyedSingleton<AIAgent>("pig-latin-proxy", (sp, key) =>
-{
-    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-    var httpClient = httpClientFactory.CreateClient("GatewayClient");
-
-    return new HttpResponseProxyAgent(
-        httpClient: httpClient,
-        agentName: "pig-latin-agent", // Routes to Python agent via Gateway
-        description: "Proxy to Python pig-latin-agent"
-    );
-});
+builder.AddProxyAgent(proxyKey: "pig-latin-proxy", targetAgentName: "pig-latin-agent", httpClientName: "GatewayClient");
 
 // Polyglot workflow: .NET writes story, Python translates to Pig Latin
 var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) =>
@@ -167,7 +157,7 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
     var agents = new AIAgent[]
     {
         sp.GetRequiredKeyedService<AIAgent>("story-writer"),
-        sp.GetRequiredKeyedService<AIAgent>("pig-latin-proxy") // HttpResponseProxyAgent inherits from AIAgent
+        sp.GetRequiredKeyedService<HttpResponseProxyAgent>("pig-latin-proxy") // HttpResponseProxyAgent inherits from AIAgent
     };
 
     return AgentWorkflowBuilder.BuildSequential(
@@ -184,17 +174,7 @@ var polyglotWorkflow = builder.AddWorkflow("polyglot-story-workflow", (sp, key) 
 // Users interact with:
 //   - Real Python agents directly via Gateway
 //   - .NET workflows that internally use these proxies
-builder.Services.AddKeyedSingleton("travel-itinerary-proxy", (sp, key) =>
-{
-    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-    var httpClient = httpClientFactory.CreateClient("GatewayClient");
-
-    return new HttpResponseProxyAgent(
-        httpClient: httpClient,
-        agentName: "travel-itinerary-agent", // Routes to Python agent via Gateway
-        description: "Proxy to Python travel-itinerary-agent"
-    );
-});
+builder.AddProxyAgent(proxyKey: "travel-itinerary-proxy", targetAgentName: "travel-itinerary-agent", httpClientName: "GatewayClient");
 
 // Write stories based on travel itineraries
 var travelWorkflow = builder.AddWorkflow("travel-journal-workflow", (sp, key) =>
